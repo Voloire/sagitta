@@ -1,0 +1,17 @@
+# Ambiente Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Test e strumenti
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Artefatti locali di lavoro
+demo.fits
+*.fits.tmp

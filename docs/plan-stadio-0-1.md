@@ -12,13 +12,48 @@
 
 ### Dove si lavora
 
-Radice del repository: `C:\Users\Voloirex\astro-harness`. Tutto il codice nuovo vive in
-`sagitta/`; i workflow in `.github/`; `SECURITY.md` e `CHANGELOG.md` nella radice.
+Radice del repository: `C:\Users\Voloirex\sagitta`, che corrisponde a
+**https://github.com/Voloire/sagitta**, repository **pubblico** con licenza MIT.
 
-**La directory di lavoro per ogni comando `Run:` è `sagitta/`**, con due eccezioni segnalate
-esplicitamente nei rispettivi passi. I comandi non contengono `cd`: posizionati una volta e
-resta lì. Se il tuo strumento non mantiene la directory fra un comando e l'altro, anteponi tu
-lo spostamento nella forma corretta per la tua shell.
+**La directory di lavoro per ogni comando `Run:` è la radice del repository.** I comandi non
+contengono `cd`: posizionati una volta e resta lì. Se il tuo strumento non mantiene la
+directory fra un comando e l'altro, anteponi tu lo spostamento.
+
+Il codice vive in `src/sagitta/`, i test in `tests/`, i workflow in `.github/workflows/`.
+`LICENSE`, `README.md`, `SECURITY.md` e `CHANGELOG.md` stanno nella radice.
+
+### I rami: si sviluppa su `dev`, si rilascia da `main`
+
+Due rami, e nessun altro. La regola è breve e non ha eccezioni.
+
+| Ramo | A cosa serve | Chi ci scrive |
+|---|---|---|
+| `dev` | dove nasce tutto il lavoro. Un commit per task, spinto man mano. | tu, l'agente di sviluppo |
+| `main` | solo ciò che è stato verificato. Ogni commit qui è rilasciabile. | nessuno direttamente: ci arriva per merge di una pull request |
+
+Il ciclo completo, una volta sola per capirlo:
+
+1. **Sviluppo.** Ogni task di questo piano committa su `dev` e spinge su `dev`. La CI gira
+   a ogni push e ti dice subito se hai rotto qualcosa o dimenticato un file.
+2. **Test.** La suite deve essere verde su `dev`. Non è un'opinione: è il workflow `ci`
+   che lo dice, in ambiente pulito, non la tua esecuzione locale.
+3. **Merge.** Quando il blocco di lavoro è completo, si apre una **pull request da `dev` a
+   `main`**. La CI rigira sulla pull request. Il merge lo fa il proprietario del
+   repository, non tu.
+4. **Release.** Sul `main` così ottenuto il proprietario crea il tag `vX.Y.Z`, che fa
+   partire il workflow `release` del Task 16. Il tag è l'unico gesto che pubblica qualcosa.
+
+**Cosa fa questo per te, in concreto:** committi e spingi solo su `dev`. Non tocchi `main`,
+non apri la pull request, non crei tag. I passi 3 e 4 sono decisioni umane, e il Task 16
+lo dice di nuovo dove serve.
+
+**Il primo comando, prima di qualsiasi task.** Verifica su quale ramo ti trovi:
+
+Run: `git rev-parse --abbrev-ref HEAD`
+
+Expected: `dev`. Il ramo esiste già. Se rispondesse `main`, passa a `dev` con
+`git switch dev` e ricontrolla: un commit finito su `main` per sbaglio è la sola cosa di
+questo protocollo che è scomoda da disfare.
 
 ### Shell
 
@@ -37,10 +72,10 @@ non aggirarlo.
 
 ### Preparazione dell'ambiente, una volta sola
 
-**Il virtualenv esiste già** ed è in `C:\Users\Voloirex\astro-harness\.venv`, con Python
-3.13.7 e `pip`, `setuptools`, `wheel` aggiornati. **Non ricrearlo.** Esiste anche il
-`.gitignore` che lo esclude dal versionamento, insieme a `__pycache__`, `dist/` e le cache
-degli strumenti.
+**Il virtualenv esiste già** ed è in `C:\Users\Voloirex\sagitta\.venv`, con Python 3.13.7
+e `pip`, `setuptools`, `wheel` aggiornati. **Non ricrearlo.** Esiste anche il `.gitignore`
+che lo esclude dal versionamento, insieme a `__pycache__`, `dist/` e le cache degli
+strumenti. Esiste già anche il file `LICENSE` con il testo MIT.
 
 Se dovessi trovarlo mancante o corrotto, si ricrea dalla radice del repository con:
 
@@ -54,7 +89,7 @@ Verifica di essere nell'ambiente giusto prima di proseguire:
 
 Run: `python -c "import sys; print(sys.prefix); print(sys.version)"`
 
-Expected: `C:\Users\Voloirex\astro-harness\.venv` e `3.13.7`. Se il percorso non termina con
+Expected: `C:\Users\Voloirex\sagitta\.venv` e `3.13.7`. Se il percorso non termina con
 `.venv`, l'ambiente non è attivo e ogni installazione successiva finirebbe nel Python di
 sistema: fermati e attivalo. Se la versione fosse inferiore a 3.11, fermati comunque: il
 codice usa la sintassi `X | None` nelle annotazioni, che su versioni precedenti non funziona.
@@ -64,15 +99,15 @@ le modifiche ai sorgenti hanno effetto immediato, senza reinstallare.
 
 ### Ordine dei task
 
-Non è l'ordine numerico. La CI va accesa presto, così ogni task successivo è verificato su
-tutti e tre i sistemi operativi mentre lo scrivi, invece che tutto insieme alla fine:
+Non è l'ordine numerico. La CI va accesa presto, così ogni task successivo è verificato in
+ambiente pulito mentre lo scrivi, invece che tutto insieme alla fine:
 
 **1 → 14 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 15 → 16**
 
 Al Task 14 la suite contiene solo i test del Task 1, ed è normale: la CI cresce con il
-codice. Prima del Task 14 leggi la sezione **La configurazione GitHub, decisa: account
-Free, repository privato**, in fondo a questo documento: fissa il budget di minuti entro cui
-quel task e' progettato e l'elenco di cio' che non e' disponibile e non va reintrodotto.
+codice. Prima del Task 14 leggi la sezione **La configurazione GitHub, decisa: account Free,
+repository pubblico**, in fondo a questo documento: fissa cosa la piattaforma ci dà gratis e
+cosa non va reintrodotto.
 
 ### Il ciclo di ogni passo
 
@@ -112,23 +147,27 @@ Sono invarianti del progetto, non preferenze di stile. Un modello capace tende a
 - **Non introdurre chiamate di rete**, in nessun punto, nemmeno nei test.
 - **Non modificare** i file in `docs/superpowers/`, né la spec né questo piano, se non per
   spuntare le caselle.
-- **Non creare tag git** e non pubblicare release. Sono gesti del proprietario del
-  repository. Tu committi e basta.
+- **Non committare né spingere su `main`.** Si lavora su `dev` e basta. Su `main` si arriva
+  solo per merge di una pull request, e il merge lo fa il proprietario del repository.
+- **Non creare tag git** e non pubblicare release. Il tag su `main` è ciò che fa partire una
+  pubblicazione: è un gesto del proprietario del repository. Tu committi e spingi su `dev`.
 - **Non usare `git commit --amend`, `git rebase`, `git push --force`.** La storia resta
   quella che è.
 - **Non installare ASTAP** e non invocarlo. Serve al plate solving allo Stadio 4, che non è
   in questo piano.
-- **Non reintrodurre CodeQL, branch protection, rulesets, secret scanning di GitHub o le
-  artifact attestations.** Sono esclusi con motivazione: su account Free con repository
-  privato o costano o non esistono, e il workflow fallirebbe a ogni esecuzione. Le loro
-  sostituzioni sono già nel Task 15.
-- **Non installare Docker, Jenkins o runner self-hosted**, e non proporre CI locale. Il
-  budget di 2000 minuti al mese è abbondante per il consumo previsto: non c'è un problema da
-  risolvere.
-- **Non aggiungere runner Linux o macOS alla CI dei test**, e non aggiungere versioni di
-  Python alla matrice. La piattaforma supportata è una sola e la macchina di sviluppo è
-  quella. L'unica eccezione già prevista è il workflow di sicurezza, che gira su Linux perché
-  analizza file e non esegue il nostro codice.
+- **Non rendere privato il repository** e non cambiarne la visibilità. È pubblico per
+  scelta, ed è da lì che vengono i minuti illimitati, CodeQL, la push protection e le
+  attestazioni.
+- **Non installare Docker, Jenkins o runner self-hosted**, e non proporre CI locale. I minuti
+  sono illimitati: non c'è nessun problema da risolvere.
+- **Non aggiungere runner Linux o macOS alla CI dei test.** Costerebbero zero, ma
+  segnalerebbero un supporto che non diamo e produrrebbero fallimenti su piattaforme che non
+  promettiamo. La piattaforma supportata è una sola. L'unica eccezione già prevista è il
+  workflow di sicurezza, che gira su Linux perché analizza file senza eseguire il nostro
+  codice.
+- **Non committare segreti.** La push protection di GitHub è attiva e bloccherà il push:
+  quando succede, non aggirarla e non riscrivere la storia — rimuovi il segreto, revocalo, e
+  ricommitta.
 
 ### Quando qualcosa non torna
 
@@ -148,6 +187,14 @@ Un task è finito quando tutte le sue caselle sono spuntate, il comando dell'ult
 verifica dà l'esito atteso, **l'intera suite passa** — non solo i test del task corrente — e
 il commit è stato creato con il messaggio indicato. Un commit per task, nella forma scritta
 nel passo di commit. Non accorpare più task in un solo commit.
+
+Subito dopo il commit, **spingi su `dev`**:
+
+Run: `git push origin dev`
+
+Il push non è una formalità di fine giornata: è ciò che fa girare la CI, ed è lì che si
+scopre di aver dimenticato un file nel commit. Se la CI diventa rossa, il task **non è
+finito**: si corregge prima di passare al successivo.
 
 **Goal:** costruire lo strato di misura di Sagitta — leggere sub da qualunque software di acquisizione, misurare la forma stellare per stella, stratificarla per posizione nel campo — e validarlo su dati sintetici con verità nota.
 
@@ -172,31 +219,29 @@ nel passo di commit. Non accorpare più task in un solo commit.
 - Nessun numero prodotto da un modello linguistico. In questo blocco non esiste alcuna integrazione LLM.
 - Ogni funzione pubblica ha type hints. Test con `pytest`.
 - **Versionamento SemVer**, sorgente unica in `pyproject.toml`, letta a runtime dai metadati del package. Serie `0.x` finché il join con i log di guida non è dentro.
-- **Account GitHub Free, repository privato, nessuna funzionalità a pagamento.** Ne discendono 2000 minuti di Actions al mese (moltiplicatore 1x su Linux, 2x su Windows, 10x su macOS) e l'indisponibilità di CodeQL, branch protection, secret scanning e attestazioni. Se una misura richiede un piano a pagamento non entra: si usa l'equivalente open source che gira come normale passo di workflow, e si annota la rinuncia.
+- **Account GitHub Free, repository pubblico, nessuna funzionalità a pagamento.** Essendo pubblico: minuti di Actions **illimitati**, CodeQL, secret scanning con push protection e attestazioni di provenienza sono tutti gratuiti. Se una misura richiedesse comunque un piano a pagamento, non entra.
 - **Sicurezza proporzionata.** Il metro è: chi scarica deve poter verificare che l'eseguibile sia quello costruito dalla nostra CI, e che il programma non mandi i suoi dati da nessuna parte. Tutto ciò che serve a quelle due cose si fa; il resto — SBOM firmato, SLSA L3, threat model formale — no.
 - **Ogni `uses:` nei workflow è pinnato al SHA completo del commit**, con il tag in commento. Un tag mobile è codice di terzi che gira nella nostra pipeline con il nostro token.
+- **Due rami soli: `dev` e `main`.** Si sviluppa e si committa su `dev`; su `main` si arriva solo per merge di una pull request, e ogni commit di `main` deve essere rilasciabile. Il tag `vX.Y.Z` si crea su `main` e fa partire il rilascio. Merge e tag sono gesti del proprietario del repository, non dell'agente che esegue.
 
 ---
 
 ## File Structure
 
 ```
-sagitta/
+(radice del repository: C:\Users\Voloirex\sagitta)
 ├── LICENSE                          MIT
-├── pyproject.toml                   metadati, dipendenze, versione (sorgente unica)
-├── ruff.toml                        configurazione del linter
-├── tests/test_smoke.py              end-to-end sulla CLI installata
-├── tests/test_no_network.py         dimostra la promessa "tutto in locale"
-├── tests/test_version.py            versione allineata fra package e CLI
-(radice del repository)
+├── README.md
 ├── SECURITY.md                      policy e istruzioni di verifica
 ├── CHANGELOG.md                     Keep a Changelog
-└── .github/
-    ├── dependabot.yml               aggiornamenti pip e github-actions
-    └── workflows/
-        ├── ci.yml                   push su main: lint, test e audit su Windows
-        ├── security.yml             settimanale: pip-audit, bandit, Gitleaks, Trivy
-        └── release.yml              sui tag: build, checksum, release in bozza
+├── pyproject.toml                   metadati, dipendenze, versione (sorgente unica)
+├── ruff.toml                        configurazione del linter
+├── .github/
+│   ├── dependabot.yml               aggiornamenti pip e github-actions, verso dev
+│   └── workflows/
+│       ├── ci.yml                   dev, main e PR verso main: lint, test, audit
+│       ├── security.yml             settimanale e PR verso main: CodeQL
+│       └── release.yml              sui tag v*: build, checksum, attestazione, bozza
 ├── src/sagitta/
 │   ├── __init__.py
 │   ├── ingest/
@@ -225,6 +270,9 @@ sagitta/
 │   └── cli.py                       comando `sagitta measure`
 └── tests/
     ├── conftest.py
+    ├── test_smoke.py                end-to-end sulla CLI installata
+    ├── test_no_network.py           dimostra la promessa "tutto in locale"
+    ├── test_version.py              versione allineata fra package e CLI
     ├── ingest/
     │   ├── test_schema.py
     │   ├── test_dialects.py
@@ -249,12 +297,12 @@ sagitta/
 ### Task 1: Scaffolding del progetto e schema canonico
 
 **Files:**
-- Create: `sagitta/pyproject.toml`
-- Create: `sagitta/LICENSE`
-- Create: `sagitta/src/sagitta/__init__.py`
-- Create: `sagitta/src/sagitta/ingest/__init__.py`
-- Create: `sagitta/src/sagitta/ingest/schema.py`
-- Test: `sagitta/tests/ingest/test_schema.py`
+- Create: `pyproject.toml`
+- Create: `LICENSE`
+- Create: `src/sagitta/__init__.py`
+- Create: `src/sagitta/ingest/__init__.py`
+- Create: `src/sagitta/ingest/schema.py`
+- Test: `tests/ingest/test_schema.py`
 
 **Interfaces:**
 - Consumes: niente.
@@ -262,7 +310,7 @@ sagitta/
 
 - [ ] **Step 1: Scrivere il test che fallisce**
 
-Creare `sagitta/tests/ingest/test_schema.py`:
+Creare `tests/ingest/test_schema.py`:
 
 ```python
 import datetime as dt
@@ -325,7 +373,7 @@ Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta'`
 
 - [ ] **Step 3: Scrivere l'implementazione minima**
 
-Creare `sagitta/pyproject.toml`:
+Creare `pyproject.toml`:
 
 ```toml
 [build-system]
@@ -362,11 +410,12 @@ sagitta = ["dialects/*.yaml"]
 testpaths = ["tests"]
 ```
 
-Creare `sagitta/LICENSE` con il testo standard della licenza MIT, anno 2026.
+`LICENSE` **esiste già** nella radice, con il testo standard MIT e il 2026 come anno.
+Verifica che ci sia e non toccarlo.
 
-Creare `sagitta/src/sagitta/__init__.py` vuoto e `sagitta/src/sagitta/ingest/__init__.py` vuoto.
+Creare `src/sagitta/__init__.py` vuoto e `src/sagitta/ingest/__init__.py` vuoto.
 
-Creare `sagitta/src/sagitta/ingest/schema.py`:
+Creare `src/sagitta/ingest/schema.py`:
 
 ```python
 """Schema canonico dei metadati di un frame.
@@ -451,7 +500,7 @@ Expected: PASS, 3 test
 - [ ] **Step 5: Commit**
 
 ```bash
-git add sagitta/ .gitignore
+git add .
 git commit -m "feat: scaffolding progetto Sagitta e schema canonico dei frame"
 ```
 
@@ -459,18 +508,18 @@ git commit -m "feat: scaffolding progetto Sagitta e schema canonico dei frame"
 > Windows**, poi torna qui e prosegui dal Task 2. La CI va accesa adesso, così ogni task
 > successivo viene verificato in ambiente pulito mentre lo scrivi, invece che tutto insieme
 > alla fine. Prima di eseguire il Task 14 leggi la sezione **La configurazione GitHub,
-> decisa: account Free, repository privato**, in fondo a questo documento.
+> decisa: account Free, repository pubblico**, in fondo a questo documento.
 
 ---
 
 ### Task 2: Dialetti di header
 
 **Files:**
-- Create: `sagitta/src/sagitta/dialects/generic.yaml`
-- Create: `sagitta/src/sagitta/dialects/nina.yaml`
-- Create: `sagitta/src/sagitta/dialects/asiair.yaml`
-- Create: `sagitta/src/sagitta/ingest/dialects.py`
-- Test: `sagitta/tests/ingest/test_dialects.py`
+- Create: `src/sagitta/dialects/generic.yaml`
+- Create: `src/sagitta/dialects/nina.yaml`
+- Create: `src/sagitta/dialects/asiair.yaml`
+- Create: `src/sagitta/ingest/dialects.py`
+- Test: `tests/ingest/test_dialects.py`
 
 **Interfaces:**
 - Consumes: `FrameMeta` da Task 1.
@@ -481,7 +530,7 @@ git commit -m "feat: scaffolding progetto Sagitta e schema canonico dei frame"
 
 - [ ] **Step 1: Scrivere il test che fallisce**
 
-Creare `sagitta/tests/ingest/test_dialects.py`:
+Creare `tests/ingest/test_dialects.py`:
 
 ```python
 from sagitta.ingest.dialects import apply_dialect, detect_dialect, load_dialects
@@ -555,7 +604,7 @@ Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.ingest.dialect
 
 - [ ] **Step 3: Scrivere l'implementazione minima**
 
-Creare `sagitta/src/sagitta/dialects/generic.yaml`:
+Creare `src/sagitta/dialects/generic.yaml`:
 
 ```yaml
 name: generic
@@ -592,7 +641,7 @@ ignore:
   - STARCOUNT
 ```
 
-Creare `sagitta/src/sagitta/dialects/nina.yaml`:
+Creare `src/sagitta/dialects/nina.yaml`:
 
 ```yaml
 name: nina
@@ -606,7 +655,7 @@ date_obs_is_utc: true
 date_obs_at_midpoint: false
 ```
 
-Creare `sagitta/src/sagitta/dialects/asiair.yaml`:
+Creare `src/sagitta/dialects/asiair.yaml`:
 
 ```yaml
 name: asiair
@@ -623,7 +672,7 @@ Creare anche `sgp.yaml` ed `ekos.yaml` copiando la struttura di `nina.yaml`, con
 `software_contains: ["Sequence Generator"]` e `["Ekos", "KStars"]` rispettivamente, e senza
 sovrascritture in `map`.
 
-Creare `sagitta/src/sagitta/ingest/dialects.py`:
+Creare `src/sagitta/ingest/dialects.py`:
 
 ```python
 """Normalizzazione dei dialetti di header FITS verso lo schema canonico.
@@ -747,7 +796,7 @@ Expected: PASS, 7 test
 - [ ] **Step 5: Commit**
 
 ```bash
-git add sagitta/
+git add .
 git commit -m "feat: dialetti di header FITS come mappe YAML versionate"
 ```
 
@@ -756,9 +805,9 @@ git commit -m "feat: dialetti di header FITS come mappe YAML versionate"
 ### Task 3: Lettore FITS
 
 **Files:**
-- Create: `sagitta/src/sagitta/ingest/fits_reader.py`
-- Create: `sagitta/tests/conftest.py`
-- Test: `sagitta/tests/ingest/test_fits_reader.py`
+- Create: `src/sagitta/ingest/fits_reader.py`
+- Create: `tests/conftest.py`
+- Test: `tests/ingest/test_fits_reader.py`
 
 **Interfaces:**
 - Consumes: `FrameMeta` (Task 1), `detect_dialect` e `apply_dialect` (Task 2).
@@ -766,7 +815,7 @@ git commit -m "feat: dialetti di header FITS come mappe YAML versionate"
 
 - [ ] **Step 1: Scrivere il test che fallisce**
 
-Creare `sagitta/tests/conftest.py`:
+Creare `tests/conftest.py`:
 
 ```python
 from pathlib import Path
@@ -791,7 +840,7 @@ def write_fits(tmp_path: Path):
     return _write
 ```
 
-Creare `sagitta/tests/ingest/test_fits_reader.py`:
+Creare `tests/ingest/test_fits_reader.py`:
 
 ```python
 import datetime as dt
@@ -880,7 +929,7 @@ Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.ingest.fits_re
 
 - [ ] **Step 3: Scrivere l'implementazione minima**
 
-Creare `sagitta/src/sagitta/ingest/fits_reader.py`:
+Creare `src/sagitta/ingest/fits_reader.py`:
 
 ```python
 """Lettura di file FITS. Unico punto del progetto che tocca astropy."""
@@ -984,7 +1033,7 @@ Expected: PASS, tutti i test di ingest
 - [ ] **Step 5: Commit**
 
 ```bash
-git add sagitta/
+git add .
 git commit -m "feat: lettura FITS con normalizzazione dei dialetti"
 ```
 
@@ -993,9 +1042,9 @@ git commit -m "feat: lettura FITS con normalizzazione dei dialetti"
 ### Task 4: Scala di campionamento e guardrail
 
 **Files:**
-- Create: `sagitta/src/sagitta/measure/__init__.py`
-- Create: `sagitta/src/sagitta/measure/sampling.py`
-- Test: `sagitta/tests/measure/test_sampling.py`
+- Create: `src/sagitta/measure/__init__.py`
+- Create: `src/sagitta/measure/sampling.py`
+- Test: `tests/measure/test_sampling.py`
 
 **Interfaces:**
 - Consumes: `FrameMeta` (Task 1).
@@ -1007,7 +1056,7 @@ git commit -m "feat: lettura FITS con normalizzazione dei dialetti"
 
 - [ ] **Step 1: Scrivere il test che fallisce**
 
-Creare `sagitta/tests/measure/test_sampling.py`:
+Creare `tests/measure/test_sampling.py`:
 
 ```python
 import datetime as dt
@@ -1083,9 +1132,9 @@ Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.measure'`
 
 - [ ] **Step 3: Scrivere l'implementazione minima**
 
-Creare `sagitta/src/sagitta/measure/__init__.py` vuoto.
+Creare `src/sagitta/measure/__init__.py` vuoto.
 
-Creare `sagitta/src/sagitta/measure/sampling.py`:
+Creare `src/sagitta/measure/sampling.py`:
 
 ```python
 """Scala di campionamento e guardrail sulle metriche di forma.
@@ -1178,7 +1227,7 @@ Expected: PASS, 6 test
 - [ ] **Step 5: Commit**
 
 ```bash
-git add sagitta/
+git add .
 git commit -m "feat: scala di campionamento e guardrail sulle metriche di forma"
 ```
 
@@ -1187,8 +1236,8 @@ git commit -m "feat: scala di campionamento e guardrail sulle metriche di forma"
 ### Task 5: Estrazione del canale verde da matrice di Bayer
 
 **Files:**
-- Create: `sagitta/src/sagitta/measure/cfa.py`
-- Test: `sagitta/tests/measure/test_cfa.py`
+- Create: `src/sagitta/measure/cfa.py`
+- Test: `tests/measure/test_cfa.py`
 
 **Interfaces:**
 - Consumes: niente da task precedenti (solo numpy).
@@ -1199,7 +1248,7 @@ git commit -m "feat: scala di campionamento e guardrail sulle metriche di forma"
 
 - [ ] **Step 1: Scrivere il test che fallisce**
 
-Creare `sagitta/tests/measure/test_cfa.py`:
+Creare `tests/measure/test_cfa.py`:
 
 ```python
 import numpy as np
@@ -1269,7 +1318,7 @@ Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.measure.cfa'`
 
 - [ ] **Step 3: Scrivere l'implementazione minima**
 
-Creare `sagitta/src/sagitta/measure/cfa.py`:
+Creare `src/sagitta/measure/cfa.py`:
 
 ```python
 """Gestione delle sub a colori con matrice di Bayer.
@@ -1343,7 +1392,7 @@ Expected: PASS, 7 test
 - [ ] **Step 5: Commit**
 
 ```bash
-git add sagitta/
+git add .
 git commit -m "feat: estrazione del canale verde da matrice di Bayer senza interpolazione"
 ```
 
@@ -1355,8 +1404,8 @@ Questo task precede la detection di proposito: la misura di forma è testabile
 in isolamento su ritagli costruiti a mano, e la detection la userà.
 
 **Files:**
-- Create: `sagitta/src/sagitta/measure/shape.py`
-- Test: `sagitta/tests/measure/test_shape.py`
+- Create: `src/sagitta/measure/shape.py`
+- Test: `tests/measure/test_shape.py`
 
 **Interfaces:**
 - Consumes: niente (solo numpy).
@@ -1366,7 +1415,7 @@ in isolamento su ritagli costruiti a mano, e la detection la userà.
 
 - [ ] **Step 1: Scrivere il test che fallisce**
 
-Creare `sagitta/tests/measure/test_shape.py`:
+Creare `tests/measure/test_shape.py`:
 
 ```python
 import numpy as np
@@ -1446,7 +1495,7 @@ Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.measure.shape'
 
 - [ ] **Step 3: Scrivere l'implementazione minima**
 
-Creare `sagitta/src/sagitta/measure/shape.py`:
+Creare `src/sagitta/measure/shape.py`:
 
 ```python
 """Misura della forma stellare tramite momenti secondi pesati sul flusso.
@@ -1544,7 +1593,7 @@ Expected: PASS, 8 test
 - [ ] **Step 5: Commit**
 
 ```bash
-git add sagitta/
+git add .
 git commit -m "feat: misura della forma stellare con momenti secondi"
 ```
 
@@ -1553,8 +1602,8 @@ git commit -m "feat: misura della forma stellare con momenti secondi"
 ### Task 7: Detection stellare e criteri di esclusione
 
 **Files:**
-- Create: `sagitta/src/sagitta/measure/detect.py`
-- Test: `sagitta/tests/measure/test_detect.py`
+- Create: `src/sagitta/measure/detect.py`
+- Test: `tests/measure/test_detect.py`
 
 **Interfaces:**
 - Consumes: `StarShape` e `measure_shape` (Task 6).
@@ -1565,7 +1614,7 @@ git commit -m "feat: misura della forma stellare con momenti secondi"
 
 - [ ] **Step 1: Scrivere il test che fallisce**
 
-Creare `sagitta/tests/measure/test_detect.py`:
+Creare `tests/measure/test_detect.py`:
 
 ```python
 import numpy as np
@@ -1667,7 +1716,7 @@ Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.measure.detect
 
 - [ ] **Step 3: Scrivere l'implementazione minima**
 
-Creare `sagitta/src/sagitta/measure/detect.py`:
+Creare `src/sagitta/measure/detect.py`:
 
 ```python
 """Detection stellare e criteri di esclusione.
@@ -1797,7 +1846,7 @@ Expected: PASS, 7 test
 - [ ] **Step 5: Commit**
 
 ```bash
-git add sagitta/
+git add .
 git commit -m "feat: detection stellare con criteri di esclusione"
 ```
 
@@ -1806,8 +1855,8 @@ git commit -m "feat: detection stellare con criteri di esclusione"
 ### Task 8: Stratificazione del campo per zone
 
 **Files:**
-- Create: `sagitta/src/sagitta/measure/zones.py`
-- Test: `sagitta/tests/measure/test_zones.py`
+- Create: `src/sagitta/measure/zones.py`
+- Test: `tests/measure/test_zones.py`
 
 **Interfaces:**
 - Consumes: `StarShape` (Task 6).
@@ -1820,7 +1869,7 @@ git commit -m "feat: detection stellare con criteri di esclusione"
 
 - [ ] **Step 1: Scrivere il test che fallisce**
 
-Creare `sagitta/tests/measure/test_zones.py`:
+Creare `tests/measure/test_zones.py`:
 
 ```python
 import pytest
@@ -1912,7 +1961,7 @@ Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.measure.zones'
 
 - [ ] **Step 3: Scrivere l'implementazione minima**
 
-Creare `sagitta/src/sagitta/measure/zones.py`:
+Creare `src/sagitta/measure/zones.py`:
 
 ```python
 """Stratificazione della misura per posizione nel campo.
@@ -2017,7 +2066,7 @@ Expected: PASS, 8 test
 - [ ] **Step 5: Commit**
 
 ```bash
-git add sagitta/
+git add .
 git commit -m "feat: stratificazione della misura per zone del campo"
 ```
 
@@ -2026,8 +2075,8 @@ git commit -m "feat: stratificazione della misura per zone del campo"
 ### Task 9: Pipeline per singolo frame
 
 **Files:**
-- Create: `sagitta/src/sagitta/measure/frame.py`
-- Test: `sagitta/tests/measure/test_frame.py`
+- Create: `src/sagitta/measure/frame.py`
+- Test: `tests/measure/test_frame.py`
 
 **Interfaces:**
 - Consumes: tutto dai Task 1–8.
@@ -2037,7 +2086,7 @@ git commit -m "feat: stratificazione della misura per zone del campo"
 
 - [ ] **Step 1: Scrivere il test che fallisce**
 
-Creare `sagitta/tests/measure/test_frame.py`:
+Creare `tests/measure/test_frame.py`:
 
 ```python
 import numpy as np
@@ -2143,7 +2192,7 @@ Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.measure.frame'
 
 - [ ] **Step 3: Scrivere l'implementazione minima**
 
-Creare `sagitta/src/sagitta/measure/frame.py`:
+Creare `src/sagitta/measure/frame.py`:
 
 ```python
 """Orchestrazione della misura di un singolo frame.
@@ -2237,7 +2286,7 @@ ridurre ulteriormente il passo della griglia nel test, non allentare `min_stars`
 - [ ] **Step 5: Commit**
 
 ```bash
-git add sagitta/
+git add .
 git commit -m "feat: pipeline di misura per singolo frame"
 ```
 
@@ -2246,9 +2295,9 @@ git commit -m "feat: pipeline di misura per singolo frame"
 ### Task 10: Generatore di stelle sintetiche
 
 **Files:**
-- Create: `sagitta/src/sagitta/synth/__init__.py`
-- Create: `sagitta/src/sagitta/synth/psf.py`
-- Test: `sagitta/tests/synth/test_psf.py`
+- Create: `src/sagitta/synth/__init__.py`
+- Create: `src/sagitta/synth/psf.py`
+- Test: `tests/synth/test_psf.py`
 
 **Interfaces:**
 - Consumes: niente. **`synth` non importa mai da `measure`**, per evitare validazione circolare.
@@ -2256,7 +2305,7 @@ git commit -m "feat: pipeline di misura per singolo frame"
 
 - [ ] **Step 1: Scrivere il test che fallisce**
 
-Creare `sagitta/tests/synth/test_psf.py`:
+Creare `tests/synth/test_psf.py`:
 
 ```python
 import numpy as np
@@ -2309,9 +2358,9 @@ Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.synth'`
 
 - [ ] **Step 3: Scrivere l'implementazione minima**
 
-Creare `sagitta/src/sagitta/synth/__init__.py` vuoto.
+Creare `src/sagitta/synth/__init__.py` vuoto.
 
-Creare `sagitta/src/sagitta/synth/psf.py`:
+Creare `src/sagitta/synth/psf.py`:
 
 ```python
 """Resa di stelle gaussiane ellittiche su un'immagine sintetica.
@@ -2370,7 +2419,7 @@ Expected: PASS, 5 test
 - [ ] **Step 5: Commit**
 
 ```bash
-git add sagitta/
+git add .
 git commit -m "feat: resa di stelle gaussiane ellittiche per dati sintetici"
 ```
 
@@ -2379,8 +2428,8 @@ git commit -m "feat: resa di stelle gaussiane ellittiche per dati sintetici"
 ### Task 11: Generatore di sub sintetiche con aberrazione nota
 
 **Files:**
-- Create: `sagitta/src/sagitta/synth/generator.py`
-- Test: `sagitta/tests/synth/test_generator.py`
+- Create: `src/sagitta/synth/generator.py`
+- Test: `tests/synth/test_generator.py`
 
 **Interfaces:**
 - Consumes: `render_gaussian` (Task 10).
@@ -2403,7 +2452,7 @@ proprio quella che la misura deve saper distinguere:
 
 - [ ] **Step 1: Scrivere il test che fallisce**
 
-Creare `sagitta/tests/synth/test_generator.py`:
+Creare `tests/synth/test_generator.py`:
 
 ```python
 import numpy as np
@@ -2473,7 +2522,7 @@ Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.synth.generato
 
 - [ ] **Step 3: Scrivere l'implementazione minima**
 
-Creare `sagitta/src/sagitta/synth/generator.py`:
+Creare `src/sagitta/synth/generator.py`:
 
 ```python
 """Generazione di sub sintetiche con aberrazione iniettata nota.
@@ -2605,7 +2654,7 @@ Expected: PASS, tutti i test di synth
 - [ ] **Step 5: Commit**
 
 ```bash
-git add sagitta/
+git add .
 git commit -m "feat: generatore di sub sintetiche con aberrazione iniettata nota"
 ```
 
@@ -2620,9 +2669,9 @@ piano, perché il classificatore è Stadio 3. Il README deve dire esattamente qu
 lasciare intendere di più.
 
 **Files:**
-- Create: `sagitta/src/sagitta/cli.py`
-- Create: `sagitta/README.md`
-- Test: `sagitta/tests/test_benchmark.py`
+- Create: `src/sagitta/cli.py`
+- Create: `README.md`
+- Test: `tests/test_benchmark.py`
 
 **Interfaces:**
 - Consumes: `measure_frame` (Task 9), `Truth`, `generate_frame`, `write_synthetic_fits` (Task 11).
@@ -2630,7 +2679,7 @@ lasciare intendere di più.
 
 - [ ] **Step 1: Scrivere il test che fallisce**
 
-Creare `sagitta/tests/test_benchmark.py`:
+Creare `tests/test_benchmark.py`:
 
 ```python
 """Validazione dello strato di misura contro verita' sintetica nota.
@@ -2754,7 +2803,7 @@ Se i test falliscono su una soglia, la correzione va fatta **nel test o nei para
 verità iniettata, mai allentando il guardrail o i criteri di esclusione**. Le soglie del test
 sono il contratto della misura: se non sono raggiungibili, è la misura ad avere un problema.
 
-Creare `sagitta/src/sagitta/cli.py`:
+Creare `src/sagitta/cli.py`:
 
 ```python
 """Interfaccia a riga di comando di Sagitta.
@@ -2817,7 +2866,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-Creare `sagitta/README.md`:
+Creare `README.md`:
 
 ```markdown
 # Sagitta
@@ -2890,7 +2939,7 @@ statistiche delle sei zone.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add sagitta/
+git add .
 git commit -m "feat: benchmark di validazione su verita' sintetica e CLI di misura"
 ```
 
@@ -2906,8 +2955,8 @@ cioè lanciando l'eseguibile installato, non importando moduli. È il test che s
 si rompe il packaging, l'entry point o il contratto JSON — cose che nessun test unitario vede.
 
 **Files:**
-- Modify: `sagitta/pyproject.toml` (sezione `[tool.pytest.ini_options]`)
-- Create: `sagitta/tests/test_smoke.py`
+- Modify: `pyproject.toml` (sezione `[tool.pytest.ini_options]`)
+- Create: `tests/test_smoke.py`
 
 **Interfaces:**
 - Consumes: la CLI `sagitta measure` (Task 12), `Truth` / `generate_frame` /
@@ -2916,7 +2965,7 @@ si rompe il packaging, l'entry point o il contratto JSON — cose che nessun tes
 
 - [ ] **Step 1: Scrivere lo smoke test**
 
-Creare `sagitta/tests/test_smoke.py`:
+Creare `tests/test_smoke.py`:
 
 ```python
 """Smoke test end-to-end.
@@ -3020,7 +3069,7 @@ codice diverso da zero in modo prevedibile.
 
 - [ ] **Step 3: Rendere il modulo eseguibile e configurare i marker**
 
-In `sagitta/src/sagitta/cli.py` il blocco finale esiste già:
+In `src/sagitta/cli.py` il blocco finale esiste già:
 
 ```python
 if __name__ == "__main__":
@@ -3030,7 +3079,7 @@ if __name__ == "__main__":
 Questo è ciò che rende funzionante `python -m sagitta.cli`. Verificare che ci sia e non
 modificarlo.
 
-In `sagitta/pyproject.toml`, sostituire la sezione `[tool.pytest.ini_options]` con:
+In `pyproject.toml`, sostituire la sezione `[tool.pytest.ini_options]` con:
 
 ```toml
 [tool.pytest.ini_options]
@@ -3055,7 +3104,7 @@ Expected: PASS, l'intera suite
 - [ ] **Step 5: Commit**
 
 ```bash
-git add sagitta/
+git add .
 git commit -m "test: smoke test end-to-end sulla CLI e marker della suite"
 ```
 
@@ -3063,75 +3112,43 @@ git commit -m "test: smoke test end-to-end sulla CLI e marker della suite"
 
 ### Task 14: Integrazione continua su Windows
 
-**Che ruolo ha la CI in questo progetto.** Sagitta supporta **solo Windows 11**, e la
-macchina di sviluppo **è** Windows 11. Questo cambia il mestiere della CI rispetto a un
-progetto multipiattaforma: non serve più a scoprire che il codice si rompe altrove, perché
-un "altrove" non c'è. Serve a due cose più ristrette ma reali:
+**Che ruolo ha la CI qui.** Sagitta supporta **solo Windows 11**, e la macchina di sviluppo
+**è** Windows 11. Questo cambia il mestiere della CI rispetto a un progetto multipiattaforma:
+non serve a scoprire che il codice si rompe altrove, perché un "altrove" non c'è. Serve a
+tre cose più ristrette ma reali. **Verificare in un ambiente pulito**, perché in locale
+l'ambiente si sporca — pacchetti installati a mano, file rimasti da esperimenti, variabili
+impostate e dimenticate — mentre la CI parte da zero ogni volta e scopre le dipendenze che
+avevi senza dichiararle. **Verificare che tu abbia committato tutto**, che è il caso più
+frequente in assoluto di "in locale passava". E **dire se `dev` è pronto per andare in
+`main`**: è la CI sulla pull request a rispondere a quella domanda, non la tua parola.
 
-1. **Verificare in un ambiente pulito.** In locale l'ambiente si sporca: pacchetti
-   installati a mano, file rimasti da esperimenti, variabili impostate e dimenticate. La CI
-   parte da zero ogni volta e scopre le dipendenze che avevi installato senza dichiararle.
-2. **Verificare che tu abbia committato tutto.** Un test che passa in locale e fallisce in
-   CI perché manca un file è il caso più frequente in assoluto.
+**Il costo: zero.** Il repository è **pubblico**, e su repository pubblici i minuti di
+GitHub Actions sono **illimitati** e non intaccano la quota dell'account. Non c'è un budget
+da amministrare, e questa è metà della ragione per cui il repository è pubblico. Di
+conseguenza la CI gira su **ogni push a `dev` e a `main`, e su ogni pull request verso
+`main`**: il ritorno è immediato e non costa niente.
 
-Poiché la verifica quotidiana avviene in locale sulla piattaforma di destinazione, la CI non
-ha bisogno di girare a ogni push su ogni ramo. Gira sui push a `main`, e a richiesta.
-
-**Il budget, in numeri, e a chi appartiene.** I 2000 minuti al mese del piano Free sono
-**per account, non per repository**: un fondo unico condiviso da tutti i repository privati
-di quell'account. Sagitta non è sola a pescarci, quindi non può comportarsi come se lo fosse.
-
-I minuti sono *fatturati*, non reali, e Windows ha moltiplicatore **2×** — un job da 6 minuti
-reali ne costa 12.
-
-| Workflow | Runner | Quando | Costo | Al mese |
-|---|---|---|---|---|
-| `ci` — lint, suite e audit | `windows-latest` | push su `main`, a richiesta | ~12 min | 30 push = 360 min |
-| `security` (Task 15) | `ubuntu-latest` | lunedì, a richiesta | ~5 min | 20 min |
-
-**Circa 380 minuti al mese: meno del 20% del fondo.** Gli altri 1620 restano agli altri
-progetti. È un tetto che il progetto si dà da solo, non un limite tecnico, ed è la ragione
-per cui la CI non gira su ogni push di ogni ramo.
-
-**Le leve, se il fondo si affollasse.** In ordine di quanto costano in comodità, dalla meno
-dolorosa alla più:
-
-1. Togliere `push:` dai trigger di `ci` e lasciare solo `workflow_dispatch`. La lanci tu
-   quando serve. Costa poco proprio perché la macchina di sviluppo **è** la piattaforma di
-   destinazione: la verifica vera avviene già in locale.
-2. Portare `security` da settimanale a mensile.
-3. Spostare `ci` su `ubuntu-latest`. Dimezza il costo, ma smetti di verificare Windows in
-   ambiente pulito — cioè rinunci al motivo per cui la CI esiste. È l'ultima da toccare.
-
-**Sullo spazio, che è un'altra quota condivisa.** Il piano Free include 500 MB di storage per
-gli artefatti di Actions, anch'essi per account. Questo progetto **non ne consuma**: nessun
-workflow usa `upload-artifact`, e i file allegati a una Release di GitHub non contano su
-quella quota. La cache di `pip` usa la cache di Actions, che ha un limite proprio per
-repository e non tocca i 500 MB.
-
-**Perché il workflow di sicurezza gira su Linux e non su Windows.** Gli strumenti del Task 15
-analizzano file e dipendenze dichiarate: non eseguono il nostro codice, quindi il sistema
-operativo è indifferente al risultato. Farli girare su Linux costa la metà a parità di esito.
-È l'unico posto dove Linux resta, e non è un'incoerenza: è la scelta economica giusta per un
-lavoro che non dipende dalla piattaforma.
+Restano comunque due versioni di Python e non tre sistemi operativi, perché la questione non
+è più il prezzo ma **cosa promettiamo**: aggiungere runner Linux o macOS segnalerebbe un
+supporto che non diamo e produrrebbe fallimenti su piattaforme di cui non ci occupiamo.
 
 **Nota per il futuro, da non implementare ora.** Quando arriverà il turno di Ekos, INDI e
-Alpaca — cioè del mondo Linux — riaprire quel fronte costerà **aggiungere un job alla
-matrice**, non riscrivere niente: il codice resta portabile per costruzione, come dice il
-vincolo globale sulle piattaforme. Non anticipare quel lavoro.
+Alpaca — cioè del mondo Linux — riaprire quel fronte costerà **aggiungere una voce alla
+matrice**, gratis e senza riscrivere niente: il codice resta portabile per costruzione, come
+dice il vincolo globale sulle piattaforme.
 
 **Files:**
 - Create: `.github/workflows/ci.yml`
-- Create: `sagitta/ruff.toml`
-- Modify: `sagitta/pyproject.toml` (dipendenze di sviluppo)
+- Create: `ruff.toml`
+- Modify: `pyproject.toml` (dipendenze di sviluppo)
 
 **Interfaces:**
 - Consumes: la suite pytest (Task 1 in poi).
-- Produces: il workflow `ci`.
+- Produces: il workflow `ci`, che gira su `dev`, su `main` e sulle pull request verso `main`.
 
 - [ ] **Step 1: Configurare il linter e le dipendenze di sviluppo**
 
-Creare `sagitta/ruff.toml`:
+Creare `ruff.toml`:
 
 ```toml
 line-length = 100
@@ -3145,7 +3162,7 @@ ignore = ["E501"]
 "tests/**" = ["B011"]
 ```
 
-In `sagitta/pyproject.toml`, sostituire la sezione delle dipendenze opzionali con:
+In `pyproject.toml`, sostituire la sezione delle dipendenze opzionali con:
 
 ```toml
 [project.optional-dependencies]
@@ -3173,11 +3190,12 @@ Creare `.github/workflows/ci.yml`:
 ```yaml
 name: ci
 
-# Non gira su ogni push di ogni ramo. La verifica quotidiana avviene in
-# locale, che e' gia' la piattaforma di destinazione: la CI serve a
-# controllare l'ambiente pulito e che sia stato committato tutto.
+# I due rami del progetto, piu' le pull request verso main: e' la CI
+# sulla pull request a dire se dev e' pronto per il merge.
 on:
   push:
+    branches: [dev, main]
+  pull_request:
     branches: [main]
   workflow_dispatch:
 
@@ -3186,20 +3204,15 @@ on:
 permissions:
   contents: read
 
-# Un push che ne supera un altro cancella la corsa precedente. Su
-# Windows, che consuma il doppio dei minuti reali, conta.
+# Un push che ne supera un altro cancella la corsa precedente: non per
+# risparmiare minuti, che sono illimitati, ma per non leggere l'esito di
+# un commit gia' superato.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-defaults:
-  run:
-    working-directory: sagitta
-
 jobs:
-  # Un job solo. Job separati costerebbero un checkout e
-  # un'installazione ciascuno, al doppio del prezzo.
-  check:
+  lint:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -3211,11 +3224,31 @@ jobs:
 
       - run: pip install -e ".[dev]"
 
-      - name: Lint
-        run: ruff check .
+      - run: ruff check .
 
-      - name: Formattazione
-        run: ruff format --check .
+      - run: ruff format --check .
+
+      - name: Errori di sicurezza nel nostro codice
+        run: bandit -r src/sagitta -ll
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.11 e' il minimo che dichiariamo in requires-python, 3.13 e'
+        # quello che verra' impacchettato: si verificano entrambi gli
+        # estremi di cio' che promettiamo, e niente altro.
+        python-version: ["3.11", "3.13"]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - run: pip install -e ".[dev]"
 
       - name: Suite completa
         run: pytest -v --durations=10
@@ -3224,24 +3257,32 @@ jobs:
         run: pip-audit --strict
 ```
 
-**Una sola versione di Python, la 3.13.** È quella della macchina di sviluppo ed è quella che
-verrà impacchettata nell'eseguibile allo Stadio 3. Testarne due su Windows raddoppierebbe il
-costo per verificare una compatibilità che non promettiamo a nessuno: l'utente finale non
-installa Python, riceve un eseguibile che se lo porta dentro. Il `requires-python = ">=3.11"`
-in `pyproject.toml` resta perché il pacchetto è installabile anche da sorgente, ma la
-combinazione supportata e verificata è una sola.
-
 **Sul pinning delle action.** Ogni `uses:` è agganciato al **SHA completo del commit**, con
 il tag in commento. Un tag come `@v4` è mobile: chi controlla quel repository può farlo
 puntare altrove, e quel codice girerebbe nella nostra pipeline con il nostro token. È una
 delle vie d'ingresso più usate negli attacchi alla catena di build, e chiuderla costa zero.
-I SHA scritti qui **vanno verificati** sulla pagina delle release dell'action al momento in
-cui scrivi il file, non copiati alla cieca da questo documento.
+
+**I SHA di questo piano sono già stati verificati contro l'API di GitHub il 29 agosto 2026**,
+e corrispondono ai tag indicati in commento — tutti e cinque, compresi quelli dei Task 15 e
+16. Puoi copiarli così come sono. Questo è l'elenco completo, se dovessi ricontrollarli:
+
+| Action | Tag | SHA del commit |
+|---|---|---|
+| `actions/checkout` | v4.2.2 | `11bd71901bbe5b1630ceea73d27597364c9af683` |
+| `actions/setup-python` | v5.4.0 | `42375524e23c412d93fb67b49958b491fce71c38` |
+| `github/codeql-action` | v3.28.9 | `9e8d0789d4a0fa9ceb6b1738f7e269594bdd67f0` |
+| `actions/attest-build-provenance` | v2.2.0 | `520d128f165991a6c774bcb264f323e3d70747f4` |
+| `softprops/action-gh-release` | v2.2.1 | `c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda` |
+
+Un avvertimento se li ricontrolli da solo: `github/codeql-action` usa **tag annotati**, quindi
+`repos/github/codeql-action/git/ref/tags/v3.28.9` restituisce l'oggetto tag e non il commit.
+Va dereferenziato con `repos/github/codeql-action/git/tags/<sha del tag>` per ottenere il SHA
+qui sopra. Gli altri quattro puntano direttamente al commit.
 
 - [ ] **Step 4: Verificare prima di spingere**
 
 GitHub Actions non si esegue in locale, ma i comandi che il workflow lancia sì — e girano
-sulla stessa piattaforma del runner, il che è tutto il vantaggio di essere Windows-only:
+sulla stessa piattaforma del runner, che è tutto il vantaggio di essere Windows-only:
 
 Run: `ruff check .`
 
@@ -3255,75 +3296,86 @@ Expected: PASS su tutti e quattro
 
 Verifica poi che il file YAML sia sintatticamente valido:
 
-Run: `python -c "import yaml,pathlib; yaml.safe_load(pathlib.Path('../.github/workflows/ci.yml').read_text(encoding='utf-8')); print('yaml ok')"`
+Run: `python -c "import yaml,pathlib; yaml.safe_load(pathlib.Path('.github/workflows/ci.yml').read_text(encoding='utf-8')); print('yaml ok')"`
 
 Expected: `yaml ok`
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Commit e primo push**
 
 ```bash
-git add .github/workflows/ci.yml sagitta/
-git commit -m "ci: lint, suite e audit su Windows a ogni push su main"
+git add .
+git commit -m "ci: lint, suite e audit su Windows a ogni push su dev"
 ```
+
+Run: `git push origin dev`
+
+Questo è il push che accende la CI per la prima volta. Verifica l'esito:
+
+Run: `gh run list --branch dev --limit 3`
+
+Expected: la corsa più recente in stato `completed` con conclusione `success`. Se fosse
+`failure`, aprila con `gh run view --log-failed` e leggi l'errore: il caso di gran lunga
+più probabile è un file che esiste in locale ma non è nel commit.
 
 > **Prossimo task: il 2.** Torna a **Task 2: Dialetti di header** e prosegui in ordine
 > numerico fino al Task 13. Il Task 15 arriva dopo il 13.
 
 ---
 
-### Task 15: Sicurezza proporzionata su account Free e repository privato
+### Task 15: Sicurezza proporzionata
 
 **Il modello di minaccia vero.** Sagitta è un programma che qualcuno installa e a cui dà in
 pasto l'archivio di una vita di astrofotografia. Le domande di quella persona sono due:
 *dove finiscono i miei dati* e *questo eseguibile è davvero quello che dicono di aver
 costruito*. Tutto il resto è secondario, e la sicurezza di questo progetto consiste nel
-rispondere a quelle due in modo verificabile.
+rispondere a quelle due in modo verificabile — non nel collezionare badge.
 
-**Il vincolo di piattaforma.** Account **GitHub Free**, repository **privato**. Metà degli
-strumenti di sicurezza di GitHub, in questa configurazione, o costa o non c'è. La risposta
-non è pagare né rinunciare: è usare strumenti open source che girano come normali passi di
-un workflow e non dipendono da nessuna funzionalità della piattaforma.
+**Repository pubblico, e questo cambia le carte in tavola.** Su repository pubblici GitHub
+regala esattamente gli strumenti che su un privato con piano Free costerebbero: CodeQL,
+secret scanning con push protection, e le attestazioni di provenienza sulle release. Sono la
+spina dorsale di questo task e non costano niente.
 
-**Cosa usiamo, e che lavoro fa ciascuno.** Nessuna sovrapposizione: ognuno copre qualcosa
-che gli altri non vedono.
+C'è anche un'inversione che vale la pena notare, perché è controintuitiva: **su repository
+pubblico sei più protetto dai segreti, non meno.** La push protection blocca il commit di un
+token *prima* che parta. Su un repository privato con piano Free quella rete non esiste, e un
+token committato per sbaglio resta lì finché non te ne accorgi.
 
-| Strumento | Cosa vede che gli altri non vedono | Licenza | Costo |
-|---|---|---|---|
-| `tests/test_no_network.py` | che il programma non apra connessioni, dimostrato eseguendo | — | zero |
-| `pip-audit` | vulnerabilità note nell'ambiente **realmente installato**, transitive comprese | Apache-2.0 | zero |
-| `bandit` | errori di sicurezza nel **nostro** codice: subprocess, deserializzazione, tempfile | Apache-2.0 | zero |
-| Trivy | segreti nei file e **workflow mal configurati** | Apache-2.0 | zero |
-| Gitleaks | segreti nella **storia git**, che Trivy non guarda | MIT | zero |
-| Dependabot | apre PR quando esce una dipendenza corretta, **funziona anche su repo privati Free** | — | zero |
-| `SHA256SUMS` sulle release (Task 16) | che il file scaricato sia quello pubblicato | — | zero |
+**Cosa usiamo, e che lavoro fa ciascuno.** Nessuna sovrapposizione: ognuno vede qualcosa che
+gli altri non vedono.
 
-**Perché `pip-audit` e non Trivy per le vulnerabilità Python.** Trivy individua le
-dipendenze Python solo da un **lockfile**: `requirements.txt`, `poetry.lock`,
-`Pipfile.lock`, `uv.lock` o `pylock.toml`. Questo progetto usa `pyproject.toml` con
-setuptools e non ha lockfile, quindi Trivy troverebbe **zero pacchetti** e passerebbe verde
-senza aver guardato niente — il tipo di falso senso di sicurezza peggiore di nessun
-controllo. `pip-audit` legge l'ambiente installato e vede tutto, transitive comprese. Trivy
-resta per i segreti e per la configurazione dei workflow, dove è utile davvero.
+| Strumento | Cosa vede che gli altri non vedono | Dove gira |
+|---|---|---|
+| `tests/test_no_network.py` | che il programma non apra connessioni, dimostrato eseguendolo | suite, a ogni push |
+| `pip-audit` | vulnerabilità note nell'ambiente **realmente installato**, transitive comprese | `ci`, a ogni push |
+| `bandit` | errori nel **nostro** codice: subprocess, deserializzazione, tempfile | `ci`, a ogni push |
+| CodeQL | analisi semantica del flusso dei dati, che né bandit né pip-audit fanno | `security`, settimanale e sulle PR verso `main` |
+| Secret scanning + push protection | un segreto committato per sbaglio, **bloccato prima del push** | GitHub, sempre |
+| Dependabot | apre una PR quando esce la dipendenza corretta | GitHub, settimanale |
+| `SHA256SUMS` e attestazione (Task 16) | che il file scaricato sia quello pubblicato da questa CI | release |
+
+**Il livello del controllo è a due velocità, di proposito.** `bandit` e `pip-audit` sono
+istantanei e stanno nella CI di ogni push su `dev`, dove servono a non far entrare il
+difetto. CodeQL è lento e sta nel workflow settimanale — più le pull request verso `main` —
+dove serve a trovare quello che è già dentro prima che diventi rilasciabile.
 
 **Cosa NON usiamo, e perché.** Va scritto, altrimenti fra sei mesi qualcuno lo riaggiunge:
 
 | Escluso | Motivo |
 |---|---|
-| **CodeQL** | Su repository privato richiede una licenza a pagamento. Il workflow fallirebbe a ogni esecuzione. Escluso, non rimandato. |
-| **Secret scanning e push protection di GitHub** | Gratuiti solo sui repository pubblici. Coperti da Gitleaks e Trivy. |
-| **Branch protection e rulesets** | Non disponibili su repository privato con piano Free, e comunque non voluti: su un progetto a un solo autore sono attrito senza beneficio. La disciplina è il piano, non il divieto. |
-| **Artifact attestations** | Su repository privato richiedono Team o Enterprise. Sostituite da `SHA256SUMS`. Se un giorno il repository diventasse pubblico, diventano gratuite e si aggiungono. |
+| **Gitleaks, Trivy e altri scanner di segreti** | Ridondanti: il secret scanning con push protection di GitHub è gratuito sui repository pubblici e agisce *prima* del push, mentre uno scanner in CI si accorge del segreto quando è già online. Aggiungerli sarebbe un secondo lucchetto sulla stessa porta. |
+| **Branch protection e rulesets** | La separazione fra `dev` e `main` è un protocollo, non un divieto imposto dalla piattaforma. Su un progetto a un solo autore la regola scritta basta; il lucchetto arriva se e quando ci saranno più mani. |
 | **SBOM firmato, SLSA livello 3, threat model formale, penetration test** | Sproporzionati per un programma di analisi che gira in locale. Il tempo speso lì è tempo tolto alla correttezza delle misure. |
-| **Scanner a pagamento di qualunque tipo** | Fuori budget per principio: il progetto deve restare interamente riproducibile a costo zero. |
+| **Qualunque strumento a pagamento** | Il progetto deve restare interamente riproducibile a costo zero. |
 
 **Una cosa che non si risolve gratis, e va detta invece che nascosta.** Su Windows un
 eseguibile non firmato con un certificato di code signing fa comparire l'avviso SmartScreen.
 Il certificato costa qualche centinaio di euro l'anno. Fino ad allora la risposta onesta è
-pubblicare i checksum e spiegare come verificarli: non fa sparire l'avviso, ma rende
-verificabile ciò che l'avviso mette in dubbio. Va scritto nel README, non taciuto.
+l'attestazione di provenienza più i checksum, con le istruzioni per verificarli: non fa
+sparire l'avviso, ma rende verificabile ciò che l'avviso mette in dubbio. Va scritto nel
+README, non taciuto.
 
 **Files:**
-- Create: `sagitta/tests/test_no_network.py`
+- Create: `tests/test_no_network.py`
 - Create: `.github/dependabot.yml`
 - Create: `.github/workflows/security.yml`
 - Create: `SECURITY.md`
@@ -3338,7 +3390,7 @@ verificabile ciò che l'avviso mette in dubbio. Va scritto nel README, non taciu
 È il passo più importante del task. La spec promette che i dati dell'utente non lasciano la
 sua macchina: una promessa così si dimostra, non si dichiara.
 
-Creare `sagitta/tests/test_no_network.py`:
+Creare `tests/test_no_network.py`:
 
 ```python
 """Dimostrazione eseguibile della promessa "tutto in locale".
@@ -3415,68 +3467,45 @@ Creare `.github/workflows/security.yml`:
 ```yaml
 name: security
 
-# Settimanale e a richiesta. Le vulnerabilita' escono nel tempo, non ai
-# push: eseguirlo a ogni commit costerebbe budget senza trovare di piu'.
-# pip-audit gira comunque a ogni push dentro il workflow ci.
+# Settimanale, a richiesta, e su ogni pull request verso main che tocchi
+# il codice. CodeQL e' lento e serve a trovare cio' che e' gia' dentro:
+# bandit e pip-audit girano invece a ogni push, nel workflow ci, dove
+# servono a non far entrare il difetto.
 on:
   schedule:
     - cron: "0 6 * * 1"
   workflow_dispatch:
   pull_request:
+    branches: [main]
     paths:
-      - "sagitta/pyproject.toml"
+      - "src/**"
+      - "pyproject.toml"
       - ".github/workflows/**"
 
 permissions:
   contents: read
+  security-events: write
 
 jobs:
-  dependencies:
+  codeql:
+    # Su Linux, non su Windows: CodeQL analizza il codice senza
+    # eseguirlo, quindi il sistema operativo e' indifferente al
+    # risultato, e su Linux e' piu' veloce.
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: sagitta
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
+      - uses: github/codeql-action/init@9e8d0789d4a0fa9ceb6b1738f7e269594bdd67f0 # v3.28.9
         with:
-          python-version: "3.13"
-          cache: pip
+          languages: python
+          queries: security-and-quality
 
-      - run: pip install -e ".[dev]"
-
-      - name: Vulnerabilita' note nelle dipendenze installate
-        run: pip-audit --strict
-
-      - name: Errori di sicurezza nel nostro codice
-        run: bandit -r src/sagitta -ll
-
-  secrets:
-    runs-on: ubuntu-latest
-    steps:
-      # fetch-depth 0 serve a Gitleaks: senza la storia completa
-      # guarderebbe solo l'ultimo commit, che e' quasi inutile.
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          fetch-depth: 0
-
-      # Segreti nella storia git. Il tool e' MIT. L'action richiede una
-      # chiave di licenza solo per gli account organizzazione: su un
-      # account personale non serve nulla.
-      - uses: gitleaks/gitleaks-action@83373cf2f8c4db6e24b41c1a9b086bb9619e9cd3 # v2.3.7
-
-      # Segreti nei file presenti e workflow mal configurati. Niente
-      # scanner di vulnerabilita' qui: senza lockfile Trivy non vedrebbe
-      # nessuna dipendenza Python e passerebbe verde a vuoto.
-      - uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
-        with:
-          scan-type: fs
-          scan-ref: .
-          scanners: secret,misconfig
-          severity: HIGH,CRITICAL
-          exit-code: "1"
+      - uses: github/codeql-action/analyze@9e8d0789d4a0fa9ceb6b1738f7e269594bdd67f0 # v3.28.9
 ```
+
+CodeQL è gratuito perché il repository è **pubblico**. Se un giorno diventasse privato,
+questo workflow inizierebbe a fallire a ogni esecuzione: è una delle ragioni per cui il
+vincolo globale vieta di cambiare la visibilità.
 
 - [ ] **Step 4: Configurare Dependabot**
 
@@ -3486,10 +3515,14 @@ Creare `.github/dependabot.yml`:
 version: 2
 updates:
   - package-ecosystem: pip
-    directory: /sagitta
+    directory: /
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # Le pull request di Dependabot nascono verso dev, non verso main:
+    # un aggiornamento e' lavoro di sviluppo come un altro, e arriva in
+    # main per la stessa strada di tutto il resto.
+    target-branch: dev
 
   # Le action sono codice di terzi che gira nella nostra pipeline con il
   # nostro token, e nel Task 14 sono pinnate a SHA. Senza questo blocco
@@ -3499,10 +3532,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    target-branch: dev
 ```
-
-Dependabot funziona sui repository privati anche con piano Free: è l'unica funzionalità di
-sicurezza di GitHub che usiamo, e non costa niente.
 
 - [ ] **Step 5: Scrivere la policy di sicurezza**
 
@@ -3524,7 +3555,8 @@ tentasse di aprire una connessione, quel test fallirebbe e la build non passereb
 
 ## Segnalare una vulnerabilita'
 
-Scrivi in privato al proprietario del repository. Non aprire una issue pubblica.
+Usa la segnalazione privata di GitHub, nella scheda **Security** del repository
+("Report a vulnerability"). Non aprire una issue pubblica.
 
 Riceverai risposta appena possibile. Questo e' un progetto portato avanti nel tempo
 libero: non ci sono tempi di risposta garantiti e non c'e' un programma di ricompense.
@@ -3536,24 +3568,29 @@ non esistono rami di manutenzione.
 
 ## Come verificare cio' che scarichi
 
-Ogni release pubblica gli artefatti e il file `SHA256SUMS`. Le istruzioni per
-verificarli sono nelle note di ogni release.
+Ogni release pubblica gli artefatti, il file `SHA256SUMS` e un'attestazione di
+provenienza generata da GitHub, che lega quei file al commit e alla esecuzione del
+workflow che li ha prodotti. Si verifica cosi':
+
+    gh attestation verify <file> --repo Voloire/sagitta
 
 Su Windows un eseguibile non firmato con un certificato di code signing fa comparire
 l'avviso SmartScreen. Non abbiamo un certificato: costa qualche centinaio di euro
-l'anno e questo progetto non ha entrate. La verifica del checksum e' la risposta che
-possiamo dare.
+l'anno e questo progetto non ha entrate. L'attestazione di provenienza e' la risposta
+che possiamo dare, ed e' piu' forte di una firma nel dire *chi* ha costruito *cosa*,
+anche se non fa sparire l'avviso.
 
 ## Come e' controllato questo codice
 
-Automaticamente, a ogni push e ogni settimana, con strumenti open source che non
-dipendono da funzionalita' a pagamento di alcuna piattaforma:
-
-- `pip-audit` per le vulnerabilita' note nelle dipendenze effettivamente installate
-- `bandit` per gli errori di sicurezza nel codice del progetto
-- Gitleaks per i segreti nella storia git
-- Trivy per i segreti nei file e per la configurazione dei workflow
+- `pip-audit` a ogni push, per le vulnerabilita' note nelle dipendenze installate
+- `bandit` a ogni push, per gli errori di sicurezza nel codice del progetto
+- CodeQL ogni settimana e su ogni pull request verso `main`, per l'analisi semantica
+  del flusso dei dati
+- Secret scanning con push protection, che blocca un segreto prima che venga spinto
 - Dependabot per gli aggiornamenti delle dipendenze e delle GitHub Action
+
+Il codice arriva su `main` solo attraverso una pull request da `dev` con la CI verde,
+e le release nascono da un tag su `main`.
 
 ## Cosa questo progetto deliberatamente non fa
 
@@ -3573,14 +3610,16 @@ Run: `bandit -r src/sagitta -ll`
 
 Expected: PASS su tutti e tre
 
-Run: `python -c "import yaml,pathlib; [yaml.safe_load(pathlib.Path(p).read_text(encoding='utf-8')) for p in ['../.github/dependabot.yml','../.github/workflows/security.yml']]; print('yaml ok')"`
+Run: `python -c "import yaml,pathlib; [yaml.safe_load(pathlib.Path(p).read_text(encoding='utf-8')) for p in ['.github/dependabot.yml','.github/workflows/security.yml']]; print('yaml ok')"`
 
 Expected: `yaml ok`
 
 ```bash
-git add .github/ SECURITY.md sagitta/
-git commit -m "security: test di assenza rete, pip-audit, bandit, Gitleaks, Trivy, Dependabot"
+git add .
+git commit -m "security: test di assenza rete, CodeQL, Dependabot e policy"
 ```
+
+Run: `git push origin dev`
 
 ---
 
@@ -3595,10 +3634,17 @@ prima `1.0.0` è la release che contiene lo Stadio 3.
 Il codice lo legge dai metadati del package installato. Un numero scritto due volte è un
 numero che prima o poi diverge.
 
+**Da dove nasce una release.** Da un tag `vX.Y.Z` **su `main`**, e da nient'altro. La catena
+completa è: si sviluppa su `dev` → la CI è verde → pull request da `dev` a `main` → merge →
+tag sul `main` così ottenuto. Il workflow che scrivi in questo task rifiuta di pubblicare se
+una delle due condizioni non è vera: se il tag non coincide con la versione del package, o
+se il commit taggato non sta su `main`. Sono due controlli automatici che sostituiscono la
+branch protection, che su questo progetto non usiamo.
+
 **Files:**
-- Modify: `sagitta/src/sagitta/__init__.py`
-- Modify: `sagitta/src/sagitta/cli.py` (opzione `--version`)
-- Create: `sagitta/tests/test_version.py`
+- Modify: `src/sagitta/__init__.py`
+- Modify: `src/sagitta/cli.py` (opzione `--version`)
+- Create: `tests/test_version.py`
 - Create: `CHANGELOG.md`
 - Create: `.github/workflows/release.yml`
 
@@ -3609,7 +3655,7 @@ numero che prima o poi diverge.
 
 - [ ] **Step 1: Scrivere il test che fallisce**
 
-Creare `sagitta/tests/test_version.py`:
+Creare `tests/test_version.py`:
 
 ```python
 import re
@@ -3647,7 +3693,7 @@ Expected: FAIL con `AttributeError: module 'sagitta' has no attribute '__version
 
 - [ ] **Step 3: Scrivere l'implementazione**
 
-Sostituire il contenuto di `sagitta/src/sagitta/__init__.py` (finora vuoto) con:
+Sostituire il contenuto di `src/sagitta/__init__.py` (finora vuoto) con:
 
 ```python
 """Sagitta: referto forense e banco di prova per astrofotografia."""
@@ -3662,7 +3708,7 @@ except PackageNotFoundError:  # eseguito da sorgente, senza installazione
 __all__ = ["__version__"]
 ```
 
-In `sagitta/src/sagitta/cli.py`, aggiungere l'import e l'opzione. Dopo la riga
+In `src/sagitta/cli.py`, aggiungere l'import e l'opzione. Dopo la riga
 `from sagitta.measure.frame import measure_frame` aggiungere:
 
 ```python
@@ -3738,16 +3784,14 @@ Creare `.github/workflows/release.yml`:
 ```yaml
 name: release
 
+# Solo i tag. Il tag e' l'unico gesto che pubblica qualcosa, e per
+# protocollo si crea su main.
 on:
   push:
     tags: ["v*"]
 
 permissions:
   contents: read
-
-defaults:
-  run:
-    working-directory: sagitta
 
 jobs:
   build:
@@ -3756,12 +3800,22 @@ jobs:
     # l'eseguibile nativo, che su Linux non si puo' proprio fare.
     runs-on: windows-latest
     permissions:
-      # L'unico permesso di scrittura di tutto il progetto, e serve solo
-      # a creare la release. Niente id-token o attestations: le Artifact
-      # Attestations, su repository privato, richiedono Team o Enterprise.
-      contents: write
+      contents: write      # creare la release
+      id-token: write      # firmare l'attestazione di provenienza
+      attestations: write  # depositarla
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # Serve la storia completa: senza, il controllo "il tag sta su
+          # main" non avrebbe i rami remoti con cui confrontarsi.
+          fetch-depth: 0
+
+      # Sostituisce la branch protection, che su questo progetto non
+      # usiamo: se qualcuno tagga un commit rimasto su dev, o su un ramo
+      # qualsiasi, il rilascio si ferma qui.
+      - name: Il tag deve puntare a un commit che sta su main
+        run: |
+          python -c "import subprocess, sys; out = subprocess.run(['git', 'branch', '--remotes', '--contains', 'HEAD', '--list', 'origin/main'], capture_output=True, text=True).stdout.strip(); print('rami remoti che contengono questo commit: ' + (out or '(nessuno)')); sys.exit(0 if out else 1)"
 
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
         with:
@@ -3788,12 +3842,21 @@ jobs:
         run: |
           python -c "import hashlib, pathlib; d = pathlib.Path('dist'); lines = [hashlib.sha256(f.read_bytes()).hexdigest() + '  ' + f.name for f in sorted(d.iterdir()) if f.is_file()]; (d / 'SHA256SUMS').write_text('\n'.join(lines) + '\n', encoding='utf-8'); print('\n'.join(lines))"
 
+      # Gratuita perche' il repository e' pubblico. Lega ogni artefatto al
+      # commit e alla esecuzione del workflow che lo ha prodotto: e' la
+      # risposta alla domanda "questo file e' davvero quello costruito
+      # dalla loro CI?", e chi scarica la verifica con
+      #   gh attestation verify <file> --repo Voloire/sagitta
+      - uses: actions/attest-build-provenance@520d128f165991a6c774bcb264f323e3d70747f4 # v2.2.0
+        with:
+          subject-path: "dist/*.whl,dist/*.tar.gz"
+
       - uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
         with:
           files: |
-            sagitta/dist/*.whl
-            sagitta/dist/*.tar.gz
-            sagitta/dist/SHA256SUMS
+            dist/*.whl
+            dist/*.tar.gz
+            dist/SHA256SUMS
           body_path: ${{ github.workspace }}/CHANGELOG.md
           draft: true
 ```
@@ -3818,78 +3881,114 @@ Expected: due file, `sagitta-0.1.0-py3-none-any.whl` e `sagitta-0.1.0.tar.gz`
 Run: `python -c "import sagitta; assert sagitta.__version__ == '0.1.0'; print('versione allineata')"`
 Expected: `versione allineata`
 
-Run: `python -c "import yaml,pathlib; yaml.safe_load(pathlib.Path('../.github/workflows/release.yml').read_text(encoding='utf-8')); print('yaml ok')"`
+Run: `python -c "import yaml,pathlib; yaml.safe_load(pathlib.Path('.github/workflows/release.yml').read_text(encoding='utf-8')); print('yaml ok')"`
 Expected: `yaml ok`
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 8: Commit e push su `dev`**
 
 ```bash
-git add .github/workflows/release.yml CHANGELOG.md sagitta/
+git add .
 git commit -m "release: versione da metadati del package, changelog e workflow di rilascio"
 ```
 
-Il tag **non** va creato dall'agente di sviluppo. La creazione del tag `v0.1.0` è la
-decisione umana che fa partire una pubblicazione, e spetta al proprietario del repository.
+Run: `git push origin dev`
+
+**Qui il tuo lavoro finisce.** Non aprire la pull request verso `main`, non fare merge, non
+creare il tag `v0.1.0`: le tre cose che trasformano `dev` in una release pubblicata sono
+decisioni del proprietario del repository. Segnala che il Task 16 è chiuso e che `dev` è
+pronto per la pull request.
+
+- [ ] **Step 9 (proprietario del repository, non l'agente): promuovere e taggare**
+
+Scritto qui perché il protocollo sia completo in un solo posto, non perché l'agente lo
+esegua.
+
+```bash
+gh pr create --base main --head dev --title "Stadio 0 e 1: motore di misura e validazione sintetica" --body-file CHANGELOG.md
+```
+
+Con la CI verde sulla pull request:
+
+```bash
+gh pr merge --merge
+```
+
+Poi, da `main` aggiornato:
+
+```bash
+git switch main
+git pull
+git tag -a v0.1.0 -m "Sagitta 0.1.0"
+git push origin v0.1.0
+```
+
+Il push del tag fa partire il workflow `release`, che rifiuta di procedere se il tag non
+coincide con la versione del package o se il commit taggato non sta su `main`. La release
+resta in bozza fino alla pubblicazione manuale.
 
 ---
 
-## La configurazione GitHub, decisa: account Free, repository privato
+## La configurazione GitHub, decisa: account Free, repository pubblico
 
 Non è una domanda aperta: è il vincolo entro cui questo piano è scritto. Va letto prima del
 Task 14, perché tre task ne dipendono.
 
-**Account GitHub Free, repository privato.** Da cui, senza spendere niente:
+**Account GitHub Free, repository pubblico**, all'indirizzo
+**https://github.com/Voloire/sagitta**. Da cui, senza spendere niente:
 
-- **2000 minuti di Actions al mese, per account e non per repository**: un fondo unico
-  condiviso da tutti i repository privati dello stesso proprietario. Moltiplicatore 1× su
-  Linux, 2× su Windows, 10× su macOS. Il Task 14 è progettato per consumarne circa **380**,
-  cioè meno di un quinto, lasciando il resto agli altri progetti dell'account. È un tetto
-  che il progetto si dà da solo: non alzarlo senza una ragione.
-- **Dependabot funziona**, anche su repository privato. È l'unica funzionalità di sicurezza
-  della piattaforma che usiamo.
-- **Tutto il resto della sicurezza è open source** e gira come normale passo di un workflow:
-  `pip-audit`, `bandit`, Gitleaks, Trivy. Nessuno dipende dal piano GitHub, quindi nessuno
-  si rompe se la configurazione cambia.
+- **Minuti di Actions illimitati.** Sui repository pubblici non intaccano la quota di 2000
+  minuti al mese dell'account, che resta interamente disponibile per gli altri progetti
+  privati dello stesso proprietario. Non c'è un budget da amministrare: è metà della ragione
+  per cui il repository è pubblico.
+- **CodeQL gratuito**, con l'analisi semantica del flusso dei dati che bandit e pip-audit non
+  fanno.
+- **Secret scanning con push protection**, che blocca un segreto *prima* che il push parta.
+- **Attestazioni di provenienza** sugli artefatti di release, che legano ogni file al commit
+  e alla esecuzione del workflow che lo ha prodotto.
+- **Dependabot**, che funziona su qualsiasi piano.
 
-**Cosa non è disponibile in questa configurazione, e non va aggiunto per errore:**
+Tutto il resto della sicurezza è open source e gira come normale passo di un workflow:
+`pip-audit` e `bandit`. Nessuno dei due dipende dal piano GitHub.
 
-| Non disponibile | Perché |
-|---|---|
-| CodeQL | Su repository privato richiede una licenza a pagamento |
-| Secret scanning e push protection di GitHub | Gratuiti solo sui repository pubblici |
-| Branch protection e rulesets | Richiedono Pro, Team o Enterprise su repository privato |
-| Artifact attestations | Richiedono Team o Enterprise su repository privato |
-| Minuti di Actions illimitati | Solo sui repository pubblici |
+**Cosa cambia se il repository diventasse privato.** Non è un'ipotesi accademica, è la
+ragione per cui il vincolo globale lo vieta:
 
-Le prime quattro sono già escluse dal piano con la loro sostituzione. **L'agente che esegue
-non deve reintrodurle**, nemmeno se un modello o una guida le suggerisce come buona pratica:
-su questa configurazione fallirebbero a ogni esecuzione, o costerebbero soldi.
+| Funzionalità | Su pubblico | Su privato con piano Free |
+|---|---|---|
+| Minuti di Actions | illimitati | 2000/mese per account, moltiplicatore 2× su Windows |
+| CodeQL | gratuito | richiede una licenza a pagamento |
+| Secret scanning e push protection | gratuiti | non disponibili |
+| Artifact attestations | gratuite | richiedono Team o Enterprise |
+
+I workflow dei Task 14, 15 e 16 sono scritti su questa configurazione: cambiarla li fa
+fallire a ogni esecuzione.
+
+**I due rami, e perché non c'è la branch protection.** Si sviluppa su `dev`, si arriva su
+`main` per merge di una pull request, e il tag `vX.Y.Z` su `main` fa partire il rilascio. La
+branch protection imporrebbe questa regola dalla piattaforma; su un progetto a un solo autore
+è attrito senza beneficio, e la stessa garanzia dove conta davvero — al momento di pubblicare
+— è già ottenuta dai due controlli automatici del workflow `release`, che rifiuta un tag non
+allineato alla versione o non appartenente a `main`. Se un giorno il progetto avrà più mani,
+la branch protection è la prima cosa da aggiungere, e a quel punto sarà gratuita perché il
+repository è pubblico.
 
 **Nessuna infrastruttura di CI locale.** Niente Jenkins, niente Docker, niente runner
 self-hosted. Un agente locale girerebbe sulla macchina di sviluppo, quindi verificherebbe
 l'ambiente dello sviluppatore invece di uno pulito — che è esattamente il contrario del
 motivo per cui la CI esiste in un progetto a piattaforma singola. In cambio porterebbe un
 servizio da tenere aggiornato, una superficie di plugin da sorvegliare e una seconda
-definizione di pipeline da mantenere allineata alla prima. Con un consumo previsto di 380
-minuti su 2000, non c'è un problema da risolvere.
+definizione di pipeline da mantenere allineata alla prima. Con i minuti illimitati, non c'è
+proprio un problema da risolvere.
 
-### Una nota sul futuro, che non riguarda questo piano
-
-`astro-harness` è un quaderno di lavoro privato e contiene `brainstorming.md`, con giudizi
-diretti su ZWO, sui suoi clienti e su creator YouTube citati per nome: non è materiale
-pubblicabile.
-
-Se un giorno Sagitta verrà distribuita, nascerà in un **repository proprio**, e solo allora
-avrà senso valutare se renderlo pubblico — cosa che renderebbe gratuiti minuti illimitati,
-CodeQL, secret scanning e attestazioni di provenienza.
-
-Il piano è già scritto in modo compatibile con quello spostamento: tutto il codice vive sotto
-`sagitta/` e i workflow usano `working-directory: sagitta`. Per trasferirlo in un repository
-a sé basta togliere quel livello dai percorsi e rimuovere il blocco
-`defaults.run.working-directory` dai quattro workflow. Nient'altro cambia.
+**Cosa non è pubblicato, e non va pubblicato.** La discussione preliminare da cui nasce
+questo progetto contiene giudizi diretti su aziende, su loro clienti e su creator citati per
+nome. Resta negli appunti di lavoro privati, fuori da questo repository. In `docs/` va solo
+ciò che è argomentazione tecnica.
 
 **Nulla di tutto questo è compito dell'agente che esegue.** Sono decisioni del proprietario
-del repository. L'agente esegue i Task 13–16 esattamente come sono scritti.
+del repository. L'agente esegue i Task 13–16 esattamente come sono scritti, committa e
+spinge su `dev`.
+
 
 ## Cosa resta fuori da questo piano
 
