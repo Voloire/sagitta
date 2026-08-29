@@ -3419,7 +3419,7 @@ Run: `python -c "import yaml,pathlib; yaml.safe_load(pathlib.Path('.github/workf
 
 Expected: `yaml ok`
 
-- [ ] **Step 5: Commit e primo push**
+- [x] **Step 5: Commit e primo push**
 
 ```bash
 git add .
