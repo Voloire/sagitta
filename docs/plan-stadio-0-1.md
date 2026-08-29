@@ -1343,7 +1343,7 @@ git commit -m "feat: scala di campionamento e guardrail sulle metriche di forma"
   - `extract_green_sublattice(pixels: np.ndarray, pattern: str) -> np.ndarray` — restituisce un array di dimensioni `(H//2, W//2)`
   - Costante `GREEN_SUBLATTICE_SCALE_FACTOR = 2.0`
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/measure/test_cfa.py`:
 
@@ -1408,12 +1408,12 @@ def test_scale_factor_is_two():
     assert GREEN_SUBLATTICE_SCALE_FACTOR == 2.0
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/measure/test_cfa.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.measure.cfa'`
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Creare `src/sagitta/measure/cfa.py`:
 
@@ -1488,12 +1488,12 @@ uscire due. L'errore compare solo quando l'offset vale 1 e la dimensione e' pari
 il caso di **ogni sensore reale** in RGGB o BGGR: su un 6248x4176 si perderebbe una colonna
 su 3124, abbastanza poco da non vedersi a occhio e abbastanza da spostare le misure.
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/measure/test_cfa.py -v`
 Expected: PASS, 7 test
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
