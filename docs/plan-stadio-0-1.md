@@ -3336,8 +3336,22 @@ jobs:
         run: pytest -v --durations=10
 
       - name: Vulnerabilita' note nelle dipendenze
-        run: pip-audit --strict
+        run: pip-audit --skip-editable
 ```
+
+**Perche' `--skip-editable` e non `--strict`.** `pip-audit --strict` fallisce se anche una
+sola distribuzione dell'ambiente non e' auditabile, e `sagitta` installata in modalita'
+sviluppo non lo e': non sta su PyPI. L'audit si chiude con
+`Dependency not found on PyPI and could not be audited: sagitta (0.1.0)` e la CI resta rossa
+per sempre su una riga che non parla di nessuna vulnerabilita'. `--skip-editable` salta le
+distribuzioni editabili e continua ad auditare tutto il resto -- numpy, scipy, astropy,
+PyYAML e le loro transitive -- che e' esattamente cio' che la tabella del Task 15 promette.
+
+Le due opzioni **non si combinano**: `--strict --skip-editable` considera lo skip stesso un
+fallimento di raccolta e fallisce ugualmente, con `sagitta: distribution marked as editable`.
+Rinunciare a `--strict` costa poco qui, perche' l'unico pacchetto editabile dell'ambiente e'
+il progetto stesso -- nient'altro puo' diventarlo per sbaglio -- e lo skip resta visibile
+nell'output, in una tabella `Name / Skip Reason`, invece di sparire in silenzio.
 
 **Sul pinning delle action.** Ogni `uses:` è agganciato al **SHA completo del commit**, con
 il tag in commento. Un tag come `@v4` è mobile: chi controlla quel repository può farlo
@@ -3372,7 +3386,7 @@ Run: `ruff format --check .`
 
 Run: `pytest -v --durations=10`
 
-Run: `pip-audit --strict`
+Run: `pip-audit --skip-editable`
 
 Expected: PASS su tutti e quattro
 
@@ -3428,7 +3442,7 @@ gli altri non vedono.
 | Strumento | Cosa vede che gli altri non vedono | Dove gira |
 |---|---|---|
 | `tests/test_no_network.py` | che il programma non apra connessioni, dimostrato eseguendolo | suite, a ogni push |
-| `pip-audit` | vulnerabilità note nell'ambiente **realmente installato**, transitive comprese | `ci`, a ogni push |
+| `pip-audit` | vulnerabilità note nell'ambiente **realmente installato**, transitive comprese (il progetto stesso, editabile, è saltato) | `ci`, a ogni push |
 | `bandit` | errori nel **nostro** codice: subprocess, deserializzazione, tempfile | `ci`, a ogni push |
 | CodeQL | analisi semantica del flusso dei dati, che né bandit né pip-audit fanno | `security`, settimanale e sulle PR verso `main` |
 | Secret scanning + push protection | un segreto committato per sbaglio, **bloccato prima del push** | GitHub, sempre |
@@ -3686,7 +3700,7 @@ delle misure.
 
 Run: `python -m pytest tests/test_no_network.py -v`
 
-Run: `pip-audit --strict`
+Run: `pip-audit --skip-editable`
 
 Run: `bandit -r src/sagitta -ll`
 
