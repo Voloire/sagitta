@@ -6,7 +6,7 @@ from sagitta.ingest.schema import FrameMeta
 def _minimal() -> FrameMeta:
     return FrameMeta(
         path="/tmp/light_0001.fits",
-        date_obs=dt.datetime(2026, 8, 29, 21, 30, 0, tzinfo=dt.timezone.utc),
+        date_obs=dt.datetime(2026, 8, 29, 21, 30, 0, tzinfo=dt.UTC),
         exposure_s=300.0,
         width=6248,
         height=4176,

@@ -808,9 +808,7 @@ def detect_dialect(header: dict) -> str:
     return "generic"
 
 
-def apply_dialect(
-    header: dict, dialect_name: str
-) -> tuple[dict[str, object], dict[str, object]]:
+def apply_dialect(header: dict, dialect_name: str) -> tuple[dict[str, object], dict[str, object]]:
     """Traduce un header grezzo in campi canonici piu' keyword sconosciute.
 
     Le keyword nella lista `ignore` del dialetto non finiscono ne' fra i campi
@@ -833,9 +831,7 @@ def apply_dialect(
     unknown = {
         key: value
         for key, value in header.items()
-        if key not in consumed
-        and key not in dialect.ignore
-        and key not in structural
+        if key not in consumed and key not in dialect.ignore and key not in structural
     }
     return canonical, unknown
 ```
@@ -896,9 +892,12 @@ Creare `tests/ingest/test_fits_reader.py`:
 
 ```python
 import datetime as dt
+from dataclasses import replace
 
 import numpy as np
+import pytest
 
+from sagitta.ingest.dialects import load_dialects
 from sagitta.ingest.fits_reader import read_frame
 
 
@@ -938,6 +937,22 @@ def test_date_obs_without_timezone_is_assumed_utc(write_fits):
     meta, _ = read_frame(path)
     assert meta.date_obs.tzinfo is dt.UTC
     assert meta.date_obs.hour == 21
+
+
+def test_naive_date_obs_rejected_when_dialect_does_not_declare_timezone(write_fits, monkeypatch):
+    path = write_fits(
+        "naive-no-timezone.fits",
+        np.zeros((10, 10), dtype=np.float32),
+        {"DATE-OBS": "2026-08-29T21:30:00", "EXPTIME": 60.0},
+    )
+    import sagitta.ingest.fits_reader as fits_reader
+
+    dialects = load_dialects().copy()
+    dialects["generic"] = replace(dialects["generic"], date_obs_is_utc=False)
+    monkeypatch.setattr(fits_reader, "load_dialects", lambda: dialects)
+
+    with pytest.raises(ValueError, match="does not declare"):
+        read_frame(path)
 
 
 def test_unknown_keywords_are_preserved(write_fits):
@@ -999,7 +1014,8 @@ from sagitta.ingest.schema import FrameMeta
 
 
 def _parse_date_obs(value: str, assume_utc: bool) -> dt.datetime:
-    """Interpreta DATE-OBS. Senza timezone esplicita si assume UTC.
+    """Interpreta DATE-OBS. Senza timezone esplicita si assume UTC solo se
+    il dialetto lo dichiara; altrimenti l'istante ambiguo viene rifiutato.
 
     L'assunzione va dichiarata all'utente: e' la sorgente di errore piu'
     comune nel join con i log di guida, specie nella notte del cambio ora.
@@ -1026,9 +1042,7 @@ def read_frame(path: Path) -> tuple[FrameMeta, np.ndarray]:
         pixels = np.asarray(hdu.data, dtype=np.float64)
 
     if pixels.ndim != 2:
-        raise ValueError(
-            f"{path.name}: attesa immagine 2D, trovate {pixels.ndim} dimensioni"
-        )
+        raise ValueError(f"{path.name}: attesa immagine 2D, trovate {pixels.ndim} dimensioni")
 
     dialect_name = detect_dialect(raw_header)
     dialect = load_dialects()[dialect_name]
@@ -1213,9 +1227,7 @@ MAX_SCALE_ARCSEC = 2.5
 """Soglia oltre la quale le metriche di forma non vengono prodotte."""
 
 
-def pixel_scale_arcsec(
-    pixel_size_um: float, focal_length_mm: float, binning: int = 1
-) -> float:
+def pixel_scale_arcsec(pixel_size_um: float, focal_length_mm: float, binning: int = 1) -> float:
     """Scala in arcosecondi per pixel.
 
     scale = 206.265 * dimensione_pixel_um / focale_mm
@@ -1235,9 +1247,7 @@ class SamplingVerdict:
     reason: str
 
 
-def evaluate_sampling(
-    meta: FrameMeta, effective_pixel_factor: float = 1.0
-) -> SamplingVerdict:
+def evaluate_sampling(meta: FrameMeta, effective_pixel_factor: float = 1.0) -> SamplingVerdict:
     """Decide se le metriche di forma sono ammesse per questo frame.
 
     `effective_pixel_factor` vale 2.0 quando si misura su un sotto-reticolo
@@ -1258,9 +1268,10 @@ def evaluate_sampling(
             "metriche di forma non prodotte.",
         )
 
-    scale = pixel_scale_arcsec(
-        meta.pixel_size_um, meta.focal_length_mm, meta.binning or 1
-    ) * effective_pixel_factor
+    scale = (
+        pixel_scale_arcsec(meta.pixel_size_um, meta.focal_length_mm, meta.binning or 1)
+        * effective_pixel_factor
+    )
 
     if scale > MAX_SCALE_ARCSEC:
         return SamplingVerdict(
@@ -1271,9 +1282,7 @@ def evaluate_sampling(
             f"sarebbero rumore quantizzato, quindi non vengono prodotti.",
         )
 
-    return SamplingVerdict(
-        scale, True, f"Campionamento adeguato: {scale:.2f} arcsec/px."
-    )
+    return SamplingVerdict(scale, True, f"Campionamento adeguato: {scale:.2f} arcsec/px.")
 ```
 
 - [ ] **Step 4: Eseguire i test e verificare che passino**
@@ -1822,9 +1831,7 @@ def estimate_background(pixels: np.ndarray) -> tuple[float, float]:
     return median, sigma
 
 
-def detect_stars(
-    pixels: np.ndarray, settings: DetectionSettings | None = None
-) -> list[StarShape]:
+def detect_stars(pixels: np.ndarray, settings: DetectionSettings | None = None) -> list[StarShape]:
     """Trova le stelle usabili e ne misura la forma.
 
     Restituisce solo le stelle che superano tutti i criteri di esclusione.
@@ -1941,9 +1948,7 @@ from sagitta.measure.zones import (
 
 
 def _star(x, y, fwhm=3.0, ecc=0.1, pa=0.0) -> StarShape:
-    return StarShape(
-        x=x, y=y, flux=1000.0, fwhm_px=fwhm, eccentricity=ecc, position_angle_deg=pa
-    )
+    return StarShape(x=x, y=y, flux=1000.0, fwhm_px=fwhm, eccentricity=ecc, position_angle_deg=pa)
 
 
 def test_radius_is_zero_at_centre():
@@ -2105,9 +2110,7 @@ def summarize_zones(
             zone=name,
             n_stars=len(members),
             median_fwhm_px=float(np.median([s.fwhm_px for s in members])),
-            median_eccentricity=float(
-                np.median([s.eccentricity for s in members])
-            ),
+            median_eccentricity=float(np.median([s.eccentricity for s in members])),
             median_position_angle_deg=_circular_median_angle(
                 [s.position_angle_deg for s in members]
             ),
@@ -2287,9 +2290,7 @@ class FrameMeasurement:
     refusals: list[str] = field(default_factory=list)
 
 
-def measure_frame(
-    path: Path, settings: DetectionSettings | None = None
-) -> FrameMeasurement:
+def measure_frame(path: Path, settings: DetectionSettings | None = None) -> FrameMeasurement:
     """Misura un frame e restituisce statistiche per zona.
 
     Se il frame non e' utilizzabile per le metriche di forma, restituisce un
@@ -2373,8 +2374,9 @@ from sagitta.synth.psf import render_gaussian
 
 def test_renders_flux_at_the_requested_position():
     image = np.zeros((100, 100))
-    render_gaussian(image, cx=30.0, cy=70.0, sigma_major=2.0, sigma_minor=2.0,
-                    theta_deg=0.0, amplitude=100.0)
+    render_gaussian(
+        image, cx=30.0, cy=70.0, sigma_major=2.0, sigma_minor=2.0, theta_deg=0.0, amplitude=100.0
+    )
     peak_y, peak_x = np.unravel_index(np.argmax(image), image.shape)
     assert peak_x == 30
     assert peak_y == 70
@@ -2388,8 +2390,9 @@ def test_circular_star_is_symmetric():
 
 def test_elongated_star_is_wider_along_the_major_axis():
     image = np.zeros((60, 60))
-    render_gaussian(image, 30.0, 30.0, sigma_major=5.0, sigma_minor=2.0,
-                    theta_deg=0.0, amplitude=100.0)
+    render_gaussian(
+        image, 30.0, 30.0, sigma_major=5.0, sigma_minor=2.0, theta_deg=0.0, amplitude=100.0
+    )
     # theta 0 -> asse maggiore lungo x
     assert image[30, 24] > image[24, 30]
 
@@ -2621,9 +2624,7 @@ class Truth:
     field_rotation: float = 0.0
 
 
-def _local_shape(
-    truth: Truth, rx: float, ry: float
-) -> tuple[float, float, float]:
+def _local_shape(truth: Truth, rx: float, ry: float) -> tuple[float, float, float]:
     """Assi e orientamento della PSF in una posizione normalizzata del campo.
 
     rx e ry vanno da -1 a +1 rispetto al centro.
@@ -2676,9 +2677,7 @@ def generate_frame(
         rx = (cx - width / 2.0) / (width / 2.0)
         ry = (cy - height / 2.0) / (height / 2.0)
         sigma_major, sigma_minor, theta = _local_shape(truth, rx, ry)
-        render_gaussian(
-            image, cx, cy, sigma_major, sigma_minor, theta, amplitude
-        )
+        render_gaussian(image, cx, cy, sigma_major, sigma_minor, theta, amplitude)
 
     return image
 
@@ -3082,14 +3081,18 @@ def test_cli_measures_a_frame_and_emits_valid_json(synthetic_light):
     assert len(payload) == 1
 
     frame = payload[0]
-    for key in ("path", "date_obs", "exposure_s", "sampling", "n_stars", "zones",
-                "refusals"):
+    for key in ("path", "date_obs", "exposure_s", "sampling", "n_stars", "zones", "refusals"):
         assert key in frame, f"campo mancante nel contratto JSON: {key}"
 
     assert frame["n_stars"] > 300
     assert frame["sampling"]["shape_metrics_allowed"] is True
     assert set(frame["zones"]) == {
-        "center", "mid", "corner_tl", "corner_tr", "corner_bl", "corner_br"
+        "center",
+        "mid",
+        "corner_tl",
+        "corner_tr",
+        "corner_bl",
+        "corner_br",
     }
     assert frame["zones"]["center"]["median_fwhm_px"] > 0
 
@@ -3235,7 +3238,7 @@ In `pyproject.toml`, sostituire la sezione delle dipendenze opzionali con:
 dev = ["pytest>=8.0", "ruff>=0.6", "pip-audit>=2.7", "bandit>=1.7", "build>=1.2"]
 ```
 
-- [ ] **Step 1-bis: allineare il file gia' committato del Task 1**
+- [x] **Step 1-bis: allineare il file gia' committato del Task 1**
 
 `ruff` segnala `UP017` su `tests/ingest/test_schema.py`, scritto al Task 1 quando ruff non
 c'era ancora. Il piano ora usa ovunque `dt.UTC`, che e' la forma che ruff pretende da
@@ -3251,7 +3254,7 @@ Expected: 3 test verdi, come prima.
 Run: `ruff check .`
 Expected: nessun errore.
 
-- [ ] **Step 2: Eseguire il linter e correggere ciò che segnala**
+- [x] **Step 2: Eseguire il linter e correggere ciò che segnala**
 
 Run: `pip install -e ".[dev]"`
 
@@ -3265,7 +3268,7 @@ Run: `ruff format --check .`
 Expected: può fallire, ed è normale la prima volta. In quel caso esegui `ruff format .` e
 includi la riformattazione nel commit di questo task.
 
-- [ ] **Step 3: Scrivere il workflow**
+- [x] **Step 3: Scrivere il workflow**
 
 Creare `.github/workflows/ci.yml`:
 
@@ -3375,7 +3378,7 @@ Un avvertimento se li ricontrolli da solo: `github/codeql-action` usa **tag anno
 Va dereferenziato con `repos/github/codeql-action/git/tags/<sha del tag>` per ottenere il SHA
 qui sopra. Gli altri quattro puntano direttamente al commit.
 
-- [ ] **Step 4: Verificare prima di spingere**
+- [x] **Step 4: Verificare prima di spingere**
 
 GitHub Actions non si esegue in locale, ma i comandi che il workflow lancia sì — e girano
 sulla stessa piattaforma del runner, che è tutto il vantaggio di essere Windows-only:
@@ -3814,9 +3817,7 @@ from sagitta import __version__
 e subito dopo la creazione del parser, prima di `subparsers = ...`, aggiungere:
 
 ```python
-    parser.add_argument(
-        "--version", action="version", version=f"sagitta {__version__}"
-    )
+parser.add_argument("--version", action="version", version=f"sagitta {__version__}")
 ```
 
 - [ ] **Step 4: Eseguire i test e verificare che passino**
