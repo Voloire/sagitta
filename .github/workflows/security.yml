@@ -1,0 +1,36 @@
+name: security
+
+# Settimanale, a richiesta, e su ogni pull request verso main che tocchi
+# il codice. CodeQL e' lento e serve a trovare cio' che e' gia' dentro:
+# bandit e pip-audit girano invece a ogni push, nel workflow ci, dove
+# servono a non far entrare il difetto.
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "pyproject.toml"
+      - ".github/workflows/**"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  codeql:
+    # Su Linux, non su Windows: CodeQL analizza il codice senza
+    # eseguirlo, quindi il sistema operativo e' indifferente al
+    # risultato, e su Linux e' piu' veloce.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: github/codeql-action/init@9e8d0789d4a0fa9ceb6b1738f7e269594bdd67f0 # v3.28.9
+        with:
+          languages: python
+          queries: security-and-quality
+
+      - uses: github/codeql-action/analyze@9e8d0789d4a0fa9ceb6b1738f7e269594bdd67f0 # v3.28.9

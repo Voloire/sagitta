@@ -3652,7 +3652,7 @@ README, non taciuto.
 - Produces: il workflow `security` e il test che rende eseguibile la promessa "tutto in
   locale".
 
-- [ ] **Step 1: Scrivere il test che dimostra l'assenza di rete**
+- [x] **Step 1: Scrivere il test che dimostra l'assenza di rete**
 
 È il passo più importante del task. La spec promette che i dati dell'utente non lasciano la
 sua macchina: una promessa così si dimostra, non si dichiara.
@@ -3715,7 +3715,7 @@ def test_the_guard_itself_works(no_network):
         socket.socket()
 ```
 
-- [ ] **Step 2: Eseguire i test e verificare che passino**
+- [x] **Step 2: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/test_no_network.py -v`
 
@@ -3727,7 +3727,7 @@ tipico è `astropy`, che in certe configurazioni scarica tabelle di dati tempora
 caso si disattiva l'aggiornamento automatico via `astropy.utils.iers`, non si silenzia il
 test.
 
-- [ ] **Step 3: Scrivere il workflow di sicurezza**
+- [x] **Step 3: Scrivere il workflow di sicurezza**
 
 Creare `.github/workflows/security.yml`:
 
@@ -3774,7 +3774,7 @@ CodeQL è gratuito perché il repository è **pubblico**. Se un giorno diventass
 questo workflow inizierebbe a fallire a ogni esecuzione: è una delle ragioni per cui il
 vincolo globale vieta di cambiare la visibilità.
 
-- [ ] **Step 4: Configurare Dependabot**
+- [x] **Step 4: Configurare Dependabot**
 
 Creare `.github/dependabot.yml`:
 
@@ -3802,7 +3802,7 @@ updates:
     target-branch: dev
 ```
 
-- [ ] **Step 5: Scrivere la policy di sicurezza**
+- [x] **Step 5: Scrivere la policy di sicurezza**
 
 Creare `SECURITY.md` nella radice del repository:
 
@@ -3867,7 +3867,7 @@ di analisi che gira in locale, e il tempo speso li' e' tempo tolto alla corrette
 delle misure.
 ```
 
-- [ ] **Step 6: Verificare e committare**
+- [x] **Step 6: Verificare e committare**
 
 Run: `python -m pytest tests/test_no_network.py -v`
 
