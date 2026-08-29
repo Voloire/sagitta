@@ -1,0 +1,32 @@
+name: generic
+match:
+  software_contains: []
+map:
+  date_obs: [DATE-OBS, DATE_OBS]
+  exposure_s: [EXPTIME, EXPOSURE]
+  width: [NAXIS1, IMAGEW]
+  height: [NAXIS2, IMAGEH]
+  filter_name: [FILTER]
+  binning: [XBINNING]
+  gain: [GAIN, EGAIN]
+  offset: [OFFSET, BLKLEVEL]
+  sensor_temp_c: [CCD-TEMP, SET-TEMP]
+  ambient_temp_c: [AMBTEMP, FOCTEMP]
+  pixel_size_um: [XPIXSZ, PIXSIZE1]
+  focal_length_mm: [FOCALLEN]
+  site_latitude_deg: [SITELAT, LAT-OBS]
+  site_longitude_deg: [SITELONG, LONG-OBS]
+  pointing_ra_deg: [CRVAL1]
+  pointing_dec_deg: [CRVAL2]
+  rotation_deg: [ROTATANG, ROTATOR]
+  telescope: [TELESCOP]
+  instrument: [INSTRUME]
+  software: [SWCREATE, PROGRAM]
+  bayer_pattern: [BAYERPAT, COLORTYP]
+date_obs_is_utc: true
+date_obs_at_midpoint: false
+ignore:
+  - HFR
+  - FWHM
+  - ECCENTRICITY
+  - STARCOUNT

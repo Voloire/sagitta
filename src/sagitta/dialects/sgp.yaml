@@ -1,0 +1,6 @@
+name: sgp
+match:
+  software_contains: ["Sequence Generator"]
+inherits: generic
+date_obs_is_utc: true
+date_obs_at_midpoint: false

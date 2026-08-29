@@ -582,7 +582,7 @@ git commit -m "feat: scaffolding progetto Sagitta e schema canonico dei frame"
   - `detect_dialect(header: dict) -> str` — restituisce il nome del dialetto, `"generic"` se nessuno corrisponde
   - `apply_dialect(header: dict, dialect_name: str) -> tuple[dict[str, object], dict[str, object]]` — restituisce `(campi_canonici, keyword_sconosciute)`
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/ingest/test_dialects.py`:
 
@@ -651,12 +651,12 @@ def test_header_measured_values_are_never_mapped():
     assert "FWHM" not in unknown
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/ingest/test_dialects.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.ingest.dialects'`
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Creare `src/sagitta/dialects/generic.yaml`:
 
@@ -867,12 +867,12 @@ def apply_dialect(header: dict, dialect_name: str) -> tuple[dict[str, object], d
     return canonical, unknown
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/ingest/test_dialects.py -v`
 Expected: PASS, 7 test
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .

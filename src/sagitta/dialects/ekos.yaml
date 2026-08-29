@@ -1,0 +1,6 @@
+name: ekos
+match:
+  software_contains: ["Ekos", "KStars"]
+inherits: generic
+date_obs_is_utc: true
+date_obs_at_midpoint: false
