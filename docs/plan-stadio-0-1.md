@@ -229,13 +229,39 @@ verifica dà l'esito atteso, **l'intera suite passa** — non solo i test del ta
 il commit è stato creato con il messaggio indicato. Un commit per task, nella forma scritta
 nel passo di commit. Non accorpare più task in un solo commit.
 
+**Prima del commit, i due controlli che la CI rifarà su un runner pulito.** Sono gli stessi
+comandi del job `lint`, costano un secondo, e se passano qui passano anche là:
+
+Run: `ruff check .`
+
+Expected: `All checks passed!`
+
+Run: `ruff format --check .`
+
+Expected: `N files already formatted`, senza nessun `would be reformatted`. Se segnala una
+riformattazione, **il file che hai scritto non è quello del piano**: torna al blocco di
+codice del task e ricopialo. I blocchi di questo documento sono già nella forma che `ruff`
+pretende, quindi una differenza vuol dire che hai copiato da una lettura precedente, non
+che il piano e lo strumento non vadano d'accordo. Correggere con `ruff format .` fa sparire
+il sintomo e lascia il tuo file diverso dal piano.
+
 Subito dopo il commit, **spingi su `dev`**:
 
 Run: `git push origin dev`
 
 Il push non è una formalità di fine giornata: è ciò che fa girare la CI, ed è lì che si
-scopre di aver dimenticato un file nel commit. Se la CI diventa rossa, il task **non è
-finito**: si corregge prima di passare al successivo.
+scopre di aver dimenticato un file nel commit.
+
+**E la CI si legge, non si presume.** Il task non è finito finché non hai visto l'esito:
+
+Run: `Start-Sleep -Seconds 30`
+
+Run: `gh run list --branch dev --limit 3`
+
+Expected: la corsa in cima è `completed` con conclusione `success`. Se è `in_progress`,
+ripeti le due righe: dura un paio di minuti. Se è `failure`, leggi il motivo con
+`gh run view --log-failed` e correggilo adesso. **Un task chiuso su una CI rossa non è
+finito**, e il difetto che ti porti dietro lo ritrovi a valle, dove costa di più.
 
 **Goal:** costruire lo strato di misura di Sagitta — leggere sub da qualunque software di acquisizione, misurare la forma stellare per stella, stratificarla per posizione nel campo — e validarlo su dati sintetici con verità nota.
 
