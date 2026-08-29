@@ -17,9 +17,7 @@ MAX_SCALE_ARCSEC = 2.5
 """Soglia oltre la quale le metriche di forma non vengono prodotte."""
 
 
-def pixel_scale_arcsec(
-    pixel_size_um: float, focal_length_mm: float, binning: int = 1
-) -> float:
+def pixel_scale_arcsec(pixel_size_um: float, focal_length_mm: float, binning: int = 1) -> float:
     """Scala in arcosecondi per pixel.
 
     scale = 206.265 * dimensione_pixel_um / focale_mm
@@ -39,9 +37,7 @@ class SamplingVerdict:
     reason: str
 
 
-def evaluate_sampling(
-    meta: FrameMeta, effective_pixel_factor: float = 1.0
-) -> SamplingVerdict:
+def evaluate_sampling(meta: FrameMeta, effective_pixel_factor: float = 1.0) -> SamplingVerdict:
     """Decide se le metriche di forma sono ammesse per questo frame.
 
     `effective_pixel_factor` vale 2.0 quando si misura su un sotto-reticolo
@@ -76,6 +72,4 @@ def evaluate_sampling(
             f"sarebbero rumore quantizzato, quindi non vengono prodotti.",
         )
 
-    return SamplingVerdict(
-        scale, True, f"Campionamento adeguato: {scale:.2f} arcsec/px."
-    )
+    return SamplingVerdict(scale, True, f"Campionamento adeguato: {scale:.2f} arcsec/px.")

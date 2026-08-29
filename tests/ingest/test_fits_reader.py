@@ -3,9 +3,9 @@ from dataclasses import replace
 
 import numpy as np
 import pytest
-from sagitta.ingest.fits_reader import read_frame
 
 from sagitta.ingest.dialects import load_dialects
+from sagitta.ingest.fits_reader import read_frame
 
 
 def test_reads_canonical_fields(write_fits):
