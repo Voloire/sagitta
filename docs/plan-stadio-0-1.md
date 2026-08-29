@@ -2772,7 +2772,7 @@ def generate_frame(
     ys = rng.uniform(margin, height - margin, size=n_stars)
     amplitudes = rng.uniform(300.0, 3000.0, size=n_stars)
 
-    for cx, cy, amplitude in zip(xs, ys, amplitudes):
+    for cx, cy, amplitude in zip(xs, ys, amplitudes, strict=True):
         rx = (cx - width / 2.0) / (width / 2.0)
         ry = (cy - height / 2.0) / (height / 2.0)
         sigma_major, sigma_minor, theta = _local_shape(truth, rx, ry)
@@ -2800,6 +2800,13 @@ def write_synthetic_fits(
     hdu.writeto(path, overwrite=True)
     return path
 ```
+
+**Sul `strict=True` in quel `zip`.** `ruff.toml` seleziona la famiglia `B`, che comprende
+`B905`: un `zip` senza `strict=` esplicito. La regola esiste perche' il comportamento
+predefinito **tronca in silenzio** alla sequenza piu' corta, ed e' un modo tipico di perdere
+dati senza accorgersene. Qui le tre sequenze hanno per costruzione lunghezza `n_stars`,
+quindi `strict=True` non cambia niente oggi: dice che se un giorno smettessero di averla si
+deve sentire un errore, invece di generare un frame con meno stelle di quelle chieste.
 
 - [ ] **Step 4: Eseguire i test e verificare che passino**
 
