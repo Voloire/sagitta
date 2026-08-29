@@ -3920,7 +3920,7 @@ branch protection, che su questo progetto non usiamo.
 - Produces: `sagitta.__version__`, l'opzione `sagitta --version`, e il workflow `release` che
   scatta sui tag `v*`.
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/test_version.py`:
 
@@ -3953,12 +3953,12 @@ def test_cli_reports_the_same_version():
     assert sagitta.__version__ in result.stdout
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/test_version.py -v`
 Expected: FAIL con `AttributeError: module 'sagitta' has no attribute '__version__'`
 
-- [ ] **Step 3: Scrivere l'implementazione**
+- [x] **Step 3: Scrivere l'implementazione**
 
 Sostituire il contenuto di `src/sagitta/__init__.py` (finora vuoto) con:
 
@@ -3988,7 +3988,7 @@ e subito dopo la creazione del parser, prima di `subparsers = ...`, aggiungere:
 parser.add_argument("--version", action="version", version=f"sagitta {__version__}")
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `pip install -e ".[dev]"`
 
@@ -3998,7 +3998,7 @@ Expected: PASS, 3 test
 Run: `python -m pytest -v`
 Expected: PASS, l'intera suite
 
-- [ ] **Step 5: Scrivere il changelog**
+- [x] **Step 5: Scrivere il changelog**
 
 **Il `CHANGELOG.md` esiste già** nella radice, con l'intestazione e una sezione
 `## [Non rilasciato]`. **Non ricrearlo.** Sostituisci il contenuto della sezione
@@ -4037,7 +4037,7 @@ quanto segue, lasciando l'intestazione del file intatta:
   confronta configurazioni: sono gli stadi successivi.
 ```
 
-- [ ] **Step 6: Scrivere il workflow di release**
+- [x] **Step 6: Scrivere il workflow di release**
 
 Creare `.github/workflows/release.yml`:
 
@@ -4131,7 +4131,7 @@ Va fatto solo dopo aver rivendicato il nome `sagitta` su PyPI e verificato che s
 Finché l'artefatto giusto per l'utente finale è l'eseguibile nativo e non la wheel, PyPI
 serve solo agli sviluppatori e può aspettare.
 
-- [ ] **Step 7: Verificare la procedura di release in locale**
+- [x] **Step 7: Verificare la procedura di release in locale**
 
 Run: `python -m build`
 
@@ -4144,7 +4144,7 @@ Expected: `versione allineata`
 Run: `python -c "import yaml,pathlib; yaml.safe_load(pathlib.Path('.github/workflows/release.yml').read_text(encoding='utf-8')); print('yaml ok')"`
 Expected: `yaml ok`
 
-- [ ] **Step 8: Commit e push su `dev`**
+- [x] **Step 8: Commit e push su `dev`**
 
 ```bash
 git add .

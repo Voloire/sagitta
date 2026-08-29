@@ -12,6 +12,7 @@ import sys
 from dataclasses import asdict
 from pathlib import Path
 
+from sagitta import __version__
 from sagitta.measure.frame import measure_frame
 
 
@@ -33,6 +34,7 @@ def main(argv: list[str] | None = None) -> int:
         prog="sagitta",
         description="Misura della forma stellare per zona del campo.",
     )
+    parser.add_argument("--version", action="version", version=f"sagitta {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     measure = subparsers.add_parser("measure", help="misura uno o piu' frame")
