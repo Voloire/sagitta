@@ -87,11 +87,10 @@ Se dovessi trovarlo mancante o corrotto, si ricrea dalla radice del repository c
 
 Run: `python -m venv .venv`
 
-**L'attivazione dell'ambiente è compito tuo, e di nessun altro.** Nessuno te lo prepara e
-nessuno te lo ricorda: se apri una shell e trovi l'ambiente spento, lo accendi tu. Vale a
-ogni nuova sessione di shell e all'inizio di ogni task, anche quando sei ragionevolmente
-sicuro che sia già attivo — il controllo costa un comando, sbagliarlo costa un'installazione
-finita nel Python di sistema.
+**L'ambiente si attiva nella shell che ti lancia, non da dentro.** Se stai leggendo questo
+piano dentro un agente, l'attivazione è già avvenuta prima che tu esistessi e tu ne erediti
+le variabili: il tuo compito è **verificarla** a ogni task, non rifarla. Il comando qui sotto
+serve a chi apre una shell a mano.
 
 Run: `.\.venv\Scripts\Activate.ps1`
 
@@ -127,14 +126,22 @@ Run: `git rev-parse --abbrev-ref HEAD`
 
 Expected: `dev`.
 
-Run: `python -c "import sys; print(sys.prefix)"`
+Run: `where.exe python`
 
-Expected: un percorso che termina con `.venv`. Se non lo è, attiva l'ambiente con
-`.\.venv\Scripts\Activate.ps1` e ricontrolla prima di proseguire.
+Expected: la **prima** riga è `C:\Users\Voloirex\sagitta\.venv\Scripts\python.exe`. Se non
+lo è, **fermati e segnala**: non provare ad attivare l'ambiente.
 
-Non sono formalità: sono le due condizioni che, se sbagliate, fanno finire il lavoro nel ramo
-sbagliato o l'installazione nel Python di sistema, e in entrambi i casi te ne accorgi molto
-dopo. Nessuno le verifica al posto tuo.
+Il motivo è tecnico e vale la pena capirlo, perché altrimenti ci si gira intorno a vuoto.
+L'ambiente virtuale non è attivo *dentro di te*: è attivo nella shell da cui sei stato
+lanciato, e tu ne erediti le variabili. Un `Activate.ps1` eseguito come tuo comando gira in
+un processo figlio che muore subito dopo, quindi non cambia niente per il comando successivo.
+Se la verifica fallisce, il pane è stato lanciato male e va rilanciato da fuori: è l'unica
+cosa di questo piano che non puoi sistemare da solo, e insistere ti farebbe solo perdere
+tempo in un ciclo che non converge.
+
+Nessuna delle due verifiche è una formalità. Sono le condizioni che, se sbagliate, fanno
+finire il lavoro nel ramo sbagliato o l'installazione nel Python di sistema, e in entrambi i
+casi te ne accorgi molto dopo.
 
 Poi, ogni task è una sequenza di passi con casella di spunta. Per ciascuno:
 
