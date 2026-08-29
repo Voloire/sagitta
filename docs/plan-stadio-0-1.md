@@ -174,6 +174,12 @@ Sono invarianti del progetto, non preferenze di stile. Un modello capace tende a
   commento, messaggio o docstring. Si dice `field_aberration`, aberrazione di campo. L'unica
   eccezione sono i parametri del generatore sintetico, dove è verità iniettata e non stima.
 - **Non leggere `HFR` o `FWHM` dagli header** per usarli come misura. Vanno ignorati sempre.
+- **Non toccare file che il task non dichiara.** Il blocco `**Files:**` di ogni task non è
+  documentazione: è un contratto, e viene confrontato con il diff da un controllo meccanico.
+  Un commit che tocca un file non dichiarato viene respinto senza che nessuno ne legga il
+  merito. Se durante un task ti accorgi che serve toccarne un altro, **fermati e segnalalo**:
+  o il diff è sbagliato, o è il piano a essere incompleto, e nel secondo caso si corregge il
+  piano.
 - **Non aggiungere dipendenze** oltre quelle elencate in `pyproject.toml`. In particolare non
   aggiungere `photutils`, `sep`, `astroquery` né alcun client HTTP.
 - **Non introdurre chiamate di rete**, in nessun punto, nemmeno nei test.
