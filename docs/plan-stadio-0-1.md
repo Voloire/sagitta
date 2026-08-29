@@ -2858,14 +2858,19 @@ from sagitta.measure.frame import measure_frame
 from sagitta.synth.generator import Truth, generate_frame, write_synthetic_fits
 
 
-def _measure(tmp_path, truth, name, n_stars=1200, seed=11):
+def _measure(tmp_path, truth, name, n_stars=300, seed=11):
     pixels = generate_frame(900, 900, truth, n_stars=n_stars, seed=seed)
     path = write_synthetic_fits(tmp_path / f"{name}.fits", pixels)
-    # Il ritaglio deve essere piu' largo della stella: con l'aberrazione
-    # iniettata le stelle d'angolo arrivano a FWHM di circa 9 pixel, e una
-    # finestra troppo stretta troncherebbe i momenti secondi, falsando
-    # verso il basso sia FWHM che eccentricita'.
-    settings = DetectionSettings(cutout_radius=16, border_margin=20)
+    # Due parametri legati fra loro, e sbagliarli falsa la misura verso
+    # l'alto invece che verso il basso. I momenti secondi pesano ogni pixel
+    # della finestra: se dentro ci finisce anche solo l'ala di una vicina, o
+    # troppo fondo cielo, FWHM ed eccentricita' si gonfiano. Con 900x900 e
+    # 300 stelle la separazione media e' circa 52 pixel, comoda rispetto ai
+    # 21 della finestra; a 1200 stelle scende a 26 e la finestra pesca la
+    # vicina quasi sempre. Misurato: a 1200 stelle e raggio 16 una stella
+    # perfettamente tonda risulta con eccentricita' 0.85 e FWHM 13.9 contro
+    # i 5.9 teorici; a 300 stelle e raggio 10 vengono 0.08 e 5.96.
+    settings = DetectionSettings(cutout_radius=10, border_margin=20)
     return measure_frame(path, settings)
 
 
