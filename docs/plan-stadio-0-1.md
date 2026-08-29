@@ -2587,7 +2587,7 @@ proprio quella che la misura deve saper distinguere:
 - **`field_rotation`** — allungamento **tangenziale** attorno al centro immagine, di ampiezza
   proporzionale al raggio.
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/synth/test_generator.py`:
 
@@ -2674,12 +2674,12 @@ centro non e' esattamente immune perche' la finestra copre un raggio normalizzat
 circa 0.28, ma i due ordini di grandezza di distanza sono la cosa che il test deve
 dimostrare.
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/synth/test_generator.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.synth.generator'`
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Creare `src/sagitta/synth/generator.py`:
 
@@ -2808,12 +2808,12 @@ dati senza accorgersene. Qui le tre sequenze hanno per costruzione lunghezza `n_
 quindi `strict=True` non cambia niente oggi: dice che se un giorno smettessero di averla si
 deve sentire un errore, invece di generare un frame con meno stelle di quelle chieste.
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/synth/ -v`
 Expected: PASS, tutti i test di synth
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
