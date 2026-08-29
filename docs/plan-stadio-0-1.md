@@ -2626,12 +2626,18 @@ def test_different_seeds_give_different_frames():
 
 def test_spacing_error_leaves_the_centre_clean():
     """Errore di spaziatura: nullo al centro, cresce col raggio."""
-    truth = Truth(seeing_sigma_px=2.0, spacing_error=3.0)
-    image = generate_frame(600, 600, truth, n_stars=600, seed=3)
-    centre = _median_in_box(image, 270, 330, 270, 330)
-    corner = _median_in_box(image, 0, 60, 0, 60)
-    # gli angoli sono piu' "sporchi" perche' le stelle sono allargate
-    assert corner > centre
+    clean = Truth(seeing_sigma_px=2.0)
+    spaced = Truth(seeing_sigma_px=2.0, spacing_error=3.0)
+    a = generate_frame(600, 600, clean, n_stars=600, seed=3)
+    b = generate_frame(600, 600, spaced, n_stars=600, seed=3)
+    # Stesso seed, stesse posizioni: il confronto appaiato isola l'allargamento
+    # invece di misurare quali stelle sono capitate dentro la finestra.
+    corner_clean = _median_in_box(a, 20, 140, 20, 140)
+    corner_spaced = _median_in_box(b, 20, 140, 20, 140)
+    centre_clean = _median_in_box(a, 240, 360, 240, 360)
+    centre_spaced = _median_in_box(b, 240, 360, 240, 360)
+    assert corner_spaced - corner_clean > 5.0
+    assert centre_spaced - centre_clean < 0.5
 
 
 def test_guide_elongation_affects_the_centre_too():
@@ -2651,6 +2657,22 @@ def test_tilt_makes_opposite_corners_differ():
     right = _median_in_box(image, 520, 600, 260, 340)
     assert abs(left - right) > 0.5
 ```
+
+**Perche' il confronto e' appaiato e non fra due zone dello stesso frame.** La mediana di
+una finestra dice soprattutto **quante stelle ci sono capitate dentro**, non quanto sono
+larghe: con 600 stelle su 600x600 una finestra da 60x60 ne contiene una manciata, e il suo
+valore salta fra 100 e 300 a seconda che una stella luminosa ci finisca o no. Confrontare
+l'angolo col centro dello stesso frame misura quindi il sorteggio delle posizioni, e passa
+o fallisce secondo il seme.
+
+Generare invece **due frame con lo stesso seme** mette le stelle nelle stesse posizioni: la
+sola differenza rimasta e' l'allargamento, ed e' quello che le due asserzioni leggono. Le
+finestre sono 120x120 perche' a 60x60 possono restare vuote - le stelle sono generate con
+un margine di 20 px dal bordo. La soglia dell'angolo e' 5.0 contro un effetto misurato fra
++57 e +379 su dodici semi, e quella del centro e' 0.5 contro uno scarto sotto 0.2: il
+centro non e' esattamente immune perche' la finestra copre un raggio normalizzato fino a
+circa 0.28, ma i due ordini di grandezza di distanza sono la cosa che il test deve
+dimostrare.
 
 - [ ] **Step 2: Eseguire il test e verificare che fallisca**
 
