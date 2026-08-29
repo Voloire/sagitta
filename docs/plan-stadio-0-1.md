@@ -29,7 +29,7 @@ Due rami, e nessun altro. La regola è breve e non ha eccezioni.
 | Ramo | A cosa serve | Chi ci scrive |
 |---|---|---|
 | `dev` | dove nasce tutto il lavoro. Un commit per task, spinto man mano. | tu, l'agente di sviluppo |
-| `main` | solo ciò che è stato verificato. Ogni commit qui è rilasciabile. | nessuno direttamente: ci arriva per merge di una pull request |
+| `main` | solo ciò che è stato verificato. Ogni commit qui è rilasciabile. | nessuno direttamente: ci arriva per merge di una pull request aperta dalla sessione Claude di revisione |
 
 Il ciclo completo, una volta sola per capirlo:
 
@@ -37,15 +37,21 @@ Il ciclo completo, una volta sola per capirlo:
    a ogni push e ti dice subito se hai rotto qualcosa o dimenticato un file.
 2. **Test.** La suite deve essere verde su `dev`. Non è un'opinione: è il workflow `ci`
    che lo dice, in ambiente pulito, non la tua esecuzione locale.
-3. **Merge.** Quando il blocco di lavoro è completo, si apre una **pull request da `dev` a
-   `main`**. La CI rigira sulla pull request. Il merge lo fa il proprietario del
-   repository, non tu.
-4. **Release.** Sul `main` così ottenuto il proprietario crea il tag `vX.Y.Z`, che fa
-   partire il workflow `release` del Task 16. Il tag è l'unico gesto che pubblica qualcosa.
+3. **Merge.** Quando il blocco di lavoro è completo, la **sessione Claude di revisione** apre
+   una pull request da `dev` a `main`, legge il diff e fa il merge. Non tu, e non perché ci
+   sia una gerarchia: chi scrive il codice non può essere anche chi lo approva, altrimenti il
+   controllo non vale niente.
+4. **Release.** Sul `main` così ottenuto la stessa sessione di revisione crea il tag
+   `vX.Y.Z`, che fa partire il workflow `release` del Task 16. Resta un solo gesto umano: la
+   release nasce in bozza, e la pubblicazione è un clic del proprietario.
 
 **Cosa fa questo per te, in concreto:** committi e spingi solo su `dev`. Non tocchi `main`,
-non apri la pull request, non crei tag. I passi 3 e 4 sono decisioni umane, e il Task 16
-lo dice di nuovo dove serve.
+non apri la pull request, non crei tag. I passi 3 e 4 non sono tuoi, e il Task 16 lo dice di
+nuovo dove serve.
+
+**Il tuo push è il segnale.** Non devi avvisare nessuno a fine task: una sorveglianza esterna
+guarda la punta di `dev` e la CI, e apre il turno di revisione da sola. Un segnale che tu
+devi ricordarti di mandare è un segnale che prima o poi non arriva.
 
 **Il primo comando, prima di qualsiasi task.** Verifica su quale ramo ti trovi:
 
@@ -148,9 +154,12 @@ Sono invarianti del progetto, non preferenze di stile. Un modello capace tende a
 - **Non modificare** i file in `docs/superpowers/`, né la spec né questo piano, se non per
   spuntare le caselle.
 - **Non committare né spingere su `main`.** Si lavora su `dev` e basta. Su `main` si arriva
-  solo per merge di una pull request, e il merge lo fa il proprietario del repository.
-- **Non creare tag git** e non pubblicare release. Il tag su `main` è ciò che fa partire una
-  pubblicazione: è un gesto del proprietario del repository. Tu committi e spingi su `dev`.
+  solo per merge di una pull request, e la pull request la apre e la chiude la sessione
+  Claude di revisione.
+- **Non creare tag git** e non pubblicare release. Il tag su `main` fa partire una
+  pubblicazione, e non è un tuo gesto. Tu committi e spingi su `dev`.
+- **Non aprire pull request** e non usare `gh pr`. Se pensi che `dev` sia pronto, dillo e
+  fermati.
 - **Non usare `git commit --amend`, `git rebase`, `git push --force`.** La storia resta
   quella che è.
 - **Non installare ASTAP** e non invocarlo. Serve al plate solving allo Stadio 4, che non è
@@ -3635,8 +3644,8 @@ Il codice lo legge dai metadati del package installato. Un numero scritto due vo
 numero che prima o poi diverge.
 
 **Da dove nasce una release.** Da un tag `vX.Y.Z` **su `main`**, e da nient'altro. La catena
-completa è: si sviluppa su `dev` → la CI è verde → pull request da `dev` a `main` → merge →
-tag sul `main` così ottenuto. Il workflow che scrivi in questo task rifiuta di pubblicare se
+completa è: si sviluppa su `dev` → la CI è verde → pull request da `dev` a `main`, aperta e
+chiusa dalla sessione Claude di revisione → merge → tag sul `main` così ottenuto. Il workflow che scrivi in questo task rifiuta di pubblicare se
 una delle due condizioni non è vera: se il tag non coincide con la versione del package, o
 se il commit taggato non sta su `main`. Sono due controlli automatici che sostituiscono la
 branch protection, che su questo progetto non usiamo.
@@ -3894,14 +3903,13 @@ git commit -m "release: versione da metadati del package, changelog e workflow d
 Run: `git push origin dev`
 
 **Qui il tuo lavoro finisce.** Non aprire la pull request verso `main`, non fare merge, non
-creare il tag `v0.1.0`: le tre cose che trasformano `dev` in una release pubblicata sono
-decisioni del proprietario del repository. Segnala che il Task 16 è chiuso e che `dev` è
-pronto per la pull request.
+creare il tag `v0.1.0`. Segnala che il Task 16 è chiuso e fermati: il push su `dev` è già
+il segnale, e il turno passa da solo.
 
-- [ ] **Step 9 (proprietario del repository, non l'agente): promuovere e taggare**
+- [ ] **Step 9 (sessione Claude di revisione, non l'agente di sviluppo): promuovere e taggare**
 
-Scritto qui perché il protocollo sia completo in un solo posto, non perché l'agente lo
-esegua.
+Scritto qui perché il protocollo sia completo in un solo posto, non perché l'agente di
+sviluppo lo esegua.
 
 ```bash
 gh pr create --base main --head dev --title "Stadio 0 e 1: motore di misura e validazione sintetica" --body-file CHANGELOG.md
@@ -3991,9 +3999,16 @@ questo progetto contiene giudizi diretti su aziende, su loro clienti e su creato
 nome. Resta negli appunti di lavoro privati, fuori da questo repository. In `docs/` va solo
 ciò che è argomentazione tecnica.
 
-**Nulla di tutto questo è compito dell'agente che esegue.** Sono decisioni del proprietario
-del repository. L'agente esegue i Task 13–16 esattamente come sono scritti, committa e
-spinge su `dev`.
+**Chi fa cosa, per chiudere il cerchio.** L'agente di sviluppo esegue i task, committa e
+spinge su `dev`: finisce lì. Una sorveglianza esterna guarda la punta di `dev` e l'esito
+della CI e apre il turno — anche quando `dev` smette di muoversi, che è il caso in cui un
+esecutore bloccato e un guardiano che insiste si annullano a vicenda in silenzio. La sessione
+Claude di revisione legge il diff, apre e chiude la pull request verso `main`, e crea il tag.
+Resta un solo gesto umano in tutta la catena: la release nasce in bozza, e pubblicarla è un
+clic del proprietario.
+
+**Nulla delle impostazioni della piattaforma è compito dell'agente che esegue.** Visibilità
+del repository, secret scanning, Dependabot e permessi sono già configurati.
 
 
 ## Cosa resta fuori da questo piano
