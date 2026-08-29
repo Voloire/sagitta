@@ -58,6 +58,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
 
+      # L'immagine del runner 3.11 porta setuptools 65.5.0, che ha
+      # vulnerabilita' note ed e' sotto il setuptools>=68 che pyproject
+      # dichiara. pip-audit lo vede e fa rosso, giustamente: si aggiorna,
+      # non si mette in ignore. Sul 3.13 questo passo non trova niente da
+      # fare, e costa qualche secondo.
+      - name: Aggiornare gli strumenti di packaging
+        run: python -m pip install --upgrade pip setuptools wheel
+
       - run: pip install -e ".[dev]"
 
       - name: Suite completa
