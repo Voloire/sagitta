@@ -3333,6 +3333,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
 
+      # L'immagine del runner 3.11 porta setuptools 65.5.0, che ha
+      # vulnerabilita' note ed e' sotto il setuptools>=68 che pyproject
+      # dichiara. pip-audit lo vede e fa rosso, giustamente: si aggiorna,
+      # non si mette in ignore. Sul 3.13 questo passo non trova niente da
+      # fare, e costa qualche secondo.
+      - name: Aggiornare gli strumenti di packaging
+        run: python -m pip install --upgrade pip setuptools wheel
+
       - run: pip install -e ".[dev]"
 
       - name: Suite completa
@@ -3355,6 +3363,18 @@ fallimento di raccolta e fallisce ugualmente, con `sagitta: distribution marked 
 Rinunciare a `--strict` costa poco qui, perche' l'unico pacchetto editabile dell'ambiente e'
 il progetto stesso -- nient'altro puo' diventarlo per sbaglio -- e lo skip resta visibile
 nell'output, in una tabella `Name / Skip Reason`, invece di sparire in silenzio.
+
+**Perche' il job `test` aggiorna setuptools prima di installare.** L'immagine dei runner
+GitHub per Python 3.11 include `setuptools 65.5.0`, che oggi ha sette vulnerabilita' note --
+da `PYSEC-2022-43012` a `PYSEC-2026-3447`, quest'ultima corretta solo in 83.0.0. Non e' una
+nostra dipendenza: e' l'ambiente su cui giriamo. Ma `pip-audit` audita l'ambiente **realmente
+installato**, quindi la vede, e fa rosso il job 3.11 mentre il 3.13 passa, perche' la sua
+immagine ne porta una recente.
+
+E' la stessa cosa che la sezione **Preparazione dell'ambiente** ha gia' fatto in locale, dove
+pip, setuptools e wheel sono aggiornati: il venv di sviluppo era allineato e la CI no, ed e'
+per questo che lo stesso comando passava sulla macchina e falliva sul runner. Un ambiente di
+verifica che non riproduce quello dichiarato non sta verificando quello che credi.
 
 **Sul pinning delle action.** Ogni `uses:` è agganciato al **SHA completo del commit**, con
 il tag in commento. Un tag come `@v4` è mobile: chi controlla quel repository può farlo
@@ -3409,6 +3429,13 @@ git commit -m "ci: lint, suite e audit su Windows a ogni push su dev"
 Run: `git push origin dev`
 
 Questo è il push che accende la CI per la prima volta. Verifica l'esito:
+
+La corsa non compare all'istante: fra il push e la sua registrazione passano alcuni secondi,
+e in quella finestra `gh run list` stampa **zero righe**. Un output vuoto non e' un
+fallimento, e' un "non ancora": aspetta e richiedi. Se dopo l'attesa la corsa risulta
+`in_progress`, richiedi ancora - dura qualche minuto.
+
+Run: `Start-Sleep -Seconds 30`
 
 Run: `gh run list --branch dev --limit 3`
 
