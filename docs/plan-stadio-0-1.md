@@ -2008,7 +2008,7 @@ git commit -m "feat: detection stellare con criteri di esclusione"
   - `summarize_zones(stars: list[StarShape], width: int, height: int, min_stars: int = 8) -> dict[str, ZoneStats]`
   - Costante `ZONE_NAMES: tuple[str, ...]`
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/measure/test_zones.py`:
 
@@ -2093,12 +2093,12 @@ def test_position_angle_median_is_circular():
     assert min(angle, 180.0 - angle) < 15.0
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/measure/test_zones.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.measure.zones'`
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Creare `src/sagitta/measure/zones.py`:
 
@@ -2195,12 +2195,12 @@ def summarize_zones(
     return stats
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/measure/test_zones.py -v`
 Expected: PASS, 8 test
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
