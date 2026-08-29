@@ -3947,6 +3947,12 @@ Task 14, perché tre task ne dipendono.
   e alla esecuzione del workflow che lo ha prodotto.
 - **Dependabot**, che funziona su qualsiasi piano.
 
+Le prime tre sono **gia' attive sul repository** — secret scanning, push protection, avvisi
+di vulnerabilita' e correzioni di sicurezza automatiche di Dependabot — e sono impostazioni
+del proprietario: l'agente non deve configurarle ne' verificarle, ma solo scrivere il file
+`.github/dependabot.yml` del Task 15, che riguarda gli aggiornamenti di versione ed e' una
+cosa diversa.
+
 Tutto il resto della sicurezza è open source e gira come normale passo di un workflow:
 `pip-audit` e `bandit`. Nessuno dei due dipende dal piano GitHub.
 
