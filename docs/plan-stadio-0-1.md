@@ -363,7 +363,7 @@ from sagitta.ingest.schema import FrameMeta
 def _minimal() -> FrameMeta:
     return FrameMeta(
         path="/tmp/light_0001.fits",
-        date_obs=dt.datetime(2026, 8, 29, 21, 30, 0, tzinfo=dt.timezone.utc),
+        date_obs=dt.datetime(2026, 8, 29, 21, 30, 0, tzinfo=dt.UTC),
         exposure_s=300.0,
         width=6248,
         height=4176,
@@ -936,7 +936,7 @@ def test_date_obs_without_timezone_is_assumed_utc(write_fits):
         {"DATE-OBS": "2026-08-29T21:30:00", "EXPTIME": 60.0},
     )
     meta, _ = read_frame(path)
-    assert meta.date_obs.tzinfo is dt.timezone.utc
+    assert meta.date_obs.tzinfo is dt.UTC
     assert meta.date_obs.hour == 21
 
 
@@ -1007,8 +1007,13 @@ def _parse_date_obs(value: str, assume_utc: bool) -> dt.datetime:
     text = value.strip().replace("Z", "+00:00")
     parsed = dt.datetime.fromisoformat(text)
     if parsed.tzinfo is None:
-        tz = dt.timezone.utc if assume_utc else dt.timezone.utc
-        parsed = parsed.replace(tzinfo=tz)
+        if not assume_utc:
+            raise ValueError(
+                f"DATE-OBS {value!r} has no timezone and the dialect does not "
+                "declare one: the instant is ambiguous, and guessing it would "
+                "silently poison the join with the guiding logs"
+            )
+        parsed = parsed.replace(tzinfo=dt.UTC)
     return parsed
 
 
@@ -1126,7 +1131,7 @@ from sagitta.measure.sampling import (
 def _meta(pixel_size_um=3.76, focal_length_mm=530.0, binning=1) -> FrameMeta:
     return FrameMeta(
         path="/tmp/x.fits",
-        date_obs=dt.datetime(2026, 8, 29, 21, 0, tzinfo=dt.timezone.utc),
+        date_obs=dt.datetime(2026, 8, 29, 21, 0, tzinfo=dt.UTC),
         exposure_s=300.0,
         width=100,
         height=100,
@@ -3201,12 +3206,13 @@ dice il vincolo globale sulle piattaforme.
 - Create: `.github/workflows/ci.yml`
 - Create: `ruff.toml`
 - Modify: `pyproject.toml` (dipendenze di sviluppo)
+- Modify: `tests/ingest/test_schema.py` (una riga, vedi Step 1-bis)
 
 **Interfaces:**
 - Consumes: la suite pytest (Task 1 in poi).
 - Produces: il workflow `ci`, che gira su `dev`, su `main` e sulle pull request verso `main`.
 
-- [ ] **Step 1: Configurare il linter e le dipendenze di sviluppo**
+- [x] **Step 1: Configurare il linter e le dipendenze di sviluppo**
 
 Creare `ruff.toml`:
 
@@ -3228,6 +3234,22 @@ In `pyproject.toml`, sostituire la sezione delle dipendenze opzionali con:
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.6", "pip-audit>=2.7", "bandit>=1.7", "build>=1.2"]
 ```
+
+- [ ] **Step 1-bis: allineare il file gia' committato del Task 1**
+
+`ruff` segnala `UP017` su `tests/ingest/test_schema.py`, scritto al Task 1 quando ruff non
+c'era ancora. Il piano ora usa ovunque `dt.UTC`, che e' la forma che ruff pretende da
+Python 3.11 in su. Sostituisci **una sola occorrenza**, in quel file:
+
+    tzinfo=dt.timezone.utc   ->   tzinfo=dt.UTC
+
+Non toccare nient'altro di quel file.
+
+Run: `python -m pytest -q`
+Expected: 3 test verdi, come prima.
+
+Run: `ruff check .`
+Expected: nessun errore.
 
 - [ ] **Step 2: Eseguire il linter e correggere ciò che segnala**
 
