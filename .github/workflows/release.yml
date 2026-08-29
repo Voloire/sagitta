@@ -33,7 +33,7 @@ jobs:
         run: |
           python -c "import subprocess, sys; out = subprocess.run(['git', 'branch', '--remotes', '--contains', 'HEAD', '--list', 'origin/main'], capture_output=True, text=True).stdout.strip(); print('rami remoti che contengono questo commit: ' + (out or '(nessuno)')); sys.exit(0 if out else 1)"
 
-      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.13"
 
