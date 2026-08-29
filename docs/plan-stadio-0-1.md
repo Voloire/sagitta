@@ -2438,7 +2438,7 @@ git commit -m "feat: pipeline di misura per singolo frame"
 - Consumes: niente. **`synth` non importa mai da `measure`**, per evitare validazione circolare.
 - Produces: `render_gaussian(image: np.ndarray, cx: float, cy: float, sigma_major: float, sigma_minor: float, theta_deg: float, amplitude: float) -> None` — disegna in place.
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/synth/test_psf.py`:
 
@@ -2488,12 +2488,12 @@ def test_rendering_accumulates():
     assert image[30, 30] == pytest.approx(2 * first, rel=1e-9)
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/synth/test_psf.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.synth'`
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Creare `src/sagitta/synth/__init__.py` vuoto.
 
@@ -2548,12 +2548,12 @@ def render_gaussian(
     )
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/synth/test_psf.py -v`
 Expected: PASS, 5 test
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
