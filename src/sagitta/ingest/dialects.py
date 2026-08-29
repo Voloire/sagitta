@@ -79,9 +79,7 @@ def detect_dialect(header: dict) -> str:
     return "generic"
 
 
-def apply_dialect(
-    header: dict, dialect_name: str
-) -> tuple[dict[str, object], dict[str, object]]:
+def apply_dialect(header: dict, dialect_name: str) -> tuple[dict[str, object], dict[str, object]]:
     """Traduce un header grezzo in campi canonici piu' keyword sconosciute.
 
     Le keyword nella lista `ignore` del dialetto non finiscono ne' fra i campi
@@ -104,8 +102,6 @@ def apply_dialect(
     unknown = {
         key: value
         for key, value in header.items()
-        if key not in consumed
-        and key not in dialect.ignore
-        and key not in structural
+        if key not in consumed and key not in dialect.ignore and key not in structural
     }
     return canonical, unknown
