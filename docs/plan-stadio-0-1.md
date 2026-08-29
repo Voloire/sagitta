@@ -1156,7 +1156,7 @@ git commit -m "feat: lettura FITS con normalizzazione dei dialetti"
   - `evaluate_sampling(meta: FrameMeta, effective_pixel_factor: float = 1.0) -> SamplingVerdict`
   - Costante `MAX_SCALE_ARCSEC = 2.5`
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/measure/test_sampling.py`:
 
@@ -1227,12 +1227,12 @@ def test_effective_pixel_factor_applies_for_osc():
     assert osc.scale_arcsec == pytest.approx(2 * mono.scale_arcsec, rel=1e-9)
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/measure/test_sampling.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.measure'`
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Creare `src/sagitta/measure/__init__.py` vuoto.
 
@@ -1316,12 +1316,12 @@ def evaluate_sampling(meta: FrameMeta, effective_pixel_factor: float = 1.0) -> S
     return SamplingVerdict(scale, True, f"Campionamento adeguato: {scale:.2f} arcsec/px.")
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/measure/test_sampling.py -v`
 Expected: PASS, 6 test
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
