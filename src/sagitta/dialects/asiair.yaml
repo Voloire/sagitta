@@ -1,0 +1,8 @@
+name: asiair
+match:
+  software_contains: ["ASIAIR"]
+inherits: generic
+map:
+  exposure_s: [EXPOSURE, EXPTIME]
+date_obs_is_utc: true
+date_obs_at_midpoint: false

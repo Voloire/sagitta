@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    # Le pull request di Dependabot nascono verso dev, non verso main:
+    # un aggiornamento e' lavoro di sviluppo come un altro, e arriva in
+    # main per la stessa strada di tutto il resto.
+    target-branch: dev
+
+  # Le action sono codice di terzi che gira nella nostra pipeline con il
+  # nostro token, e nel Task 14 sono pinnate a SHA. Senza questo blocco
+  # non verrebbero mai aggiornate, nemmeno per una correzione di
+  # sicurezza: Dependabot aggiorna il SHA e mantiene il tag in commento.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    target-branch: dev

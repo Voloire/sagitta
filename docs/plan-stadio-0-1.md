@@ -229,13 +229,39 @@ verifica dà l'esito atteso, **l'intera suite passa** — non solo i test del ta
 il commit è stato creato con il messaggio indicato. Un commit per task, nella forma scritta
 nel passo di commit. Non accorpare più task in un solo commit.
 
+**Prima del commit, i due controlli che la CI rifarà su un runner pulito.** Sono gli stessi
+comandi del job `lint`, costano un secondo, e se passano qui passano anche là:
+
+Run: `ruff check .`
+
+Expected: `All checks passed!`
+
+Run: `ruff format --check .`
+
+Expected: `N files already formatted`, senza nessun `would be reformatted`. Se segnala una
+riformattazione, **il file che hai scritto non è quello del piano**: torna al blocco di
+codice del task e ricopialo. I blocchi di questo documento sono già nella forma che `ruff`
+pretende, quindi una differenza vuol dire che hai copiato da una lettura precedente, non
+che il piano e lo strumento non vadano d'accordo. Correggere con `ruff format .` fa sparire
+il sintomo e lascia il tuo file diverso dal piano.
+
 Subito dopo il commit, **spingi su `dev`**:
 
 Run: `git push origin dev`
 
 Il push non è una formalità di fine giornata: è ciò che fa girare la CI, ed è lì che si
-scopre di aver dimenticato un file nel commit. Se la CI diventa rossa, il task **non è
-finito**: si corregge prima di passare al successivo.
+scopre di aver dimenticato un file nel commit.
+
+**E la CI si legge, non si presume.** Il task non è finito finché non hai visto l'esito:
+
+Run: `Start-Sleep -Seconds 30`
+
+Run: `gh run list --branch dev --limit 3`
+
+Expected: la corsa in cima è `completed` con conclusione `success`. Se è `in_progress`,
+ripeti le due righe: dura un paio di minuti. Se è `failure`, leggi il motivo con
+`gh run view --log-failed` e correggilo adesso. **Un task chiuso su una CI rossa non è
+finito**, e il difetto che ti porti dietro lo ritrovi a valle, dove costa di più.
 
 **Goal:** costruire lo strato di misura di Sagitta — leggere sub da qualunque software di acquisizione, misurare la forma stellare per stella, stratificarla per posizione nel campo — e validarlo su dati sintetici con verità nota.
 
@@ -363,7 +389,7 @@ from sagitta.ingest.schema import FrameMeta
 def _minimal() -> FrameMeta:
     return FrameMeta(
         path="/tmp/light_0001.fits",
-        date_obs=dt.datetime(2026, 8, 29, 21, 30, 0, tzinfo=dt.timezone.utc),
+        date_obs=dt.datetime(2026, 8, 29, 21, 30, 0, tzinfo=dt.UTC),
         exposure_s=300.0,
         width=6248,
         height=4176,
@@ -410,8 +436,17 @@ def test_only_raw_frames_are_usable_for_shape():
 
 - [ ] **Step 2: Eseguire il test e verificare che fallisca**
 
+L'ambiente virtuale è nuovo e non contiene ancora `pytest`. Il runner arriverebbe con
+`pip install -e ".[dev]"` allo Step 4, che però ha bisogno del `pyproject.toml` creato allo
+Step 3: prima del rosso va quindi installato il solo runner, e nient'altro.
+
+Run: `pip install pytest`
+
 Run: `python -m pytest tests/ingest/test_schema.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta'`
+
+Se leggi invece `No module named pytest`, il comando qui sopra non è stato eseguito: il
+fallimento che serve è quello del package assente, non quello del runner assente.
 
 - [ ] **Step 3: Scrivere l'implementazione minima**
 
@@ -560,7 +595,9 @@ git commit -m "feat: scaffolding progetto Sagitta e schema canonico dei frame"
 **Files:**
 - Create: `src/sagitta/dialects/generic.yaml`
 - Create: `src/sagitta/dialects/nina.yaml`
+- Create: `src/sagitta/dialects/sgp.yaml`
 - Create: `src/sagitta/dialects/asiair.yaml`
+- Create: `src/sagitta/dialects/ekos.yaml`
 - Create: `src/sagitta/ingest/dialects.py`
 - Test: `tests/ingest/test_dialects.py`
 
@@ -571,7 +608,7 @@ git commit -m "feat: scaffolding progetto Sagitta e schema canonico dei frame"
   - `detect_dialect(header: dict) -> str` — restituisce il nome del dialetto, `"generic"` se nessuno corrisponde
   - `apply_dialect(header: dict, dialect_name: str) -> tuple[dict[str, object], dict[str, object]]` — restituisce `(campi_canonici, keyword_sconosciute)`
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/ingest/test_dialects.py`:
 
@@ -640,12 +677,12 @@ def test_header_measured_values_are_never_mapped():
     assert "FWHM" not in unknown
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/ingest/test_dialects.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.ingest.dialects'`
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Creare `src/sagitta/dialects/generic.yaml`:
 
@@ -711,9 +748,38 @@ date_obs_is_utc: true
 date_obs_at_midpoint: false
 ```
 
-Creare anche `sgp.yaml` ed `ekos.yaml` copiando la struttura di `nina.yaml`, con
-`software_contains: ["Sequence Generator"]` e `["Ekos", "KStars"]` rispettivamente, e senza
-sovrascritture in `map`.
+Creare `src/sagitta/dialects/sgp.yaml`:
+
+```yaml
+name: sgp
+match:
+  software_contains: ["Sequence Generator"]
+inherits: generic
+date_obs_is_utc: true
+date_obs_at_midpoint: false
+```
+
+Creare `src/sagitta/dialects/ekos.yaml`:
+
+```yaml
+name: ekos
+match:
+  software_contains: ["Ekos", "KStars"]
+inherits: generic
+date_obs_is_utc: true
+date_obs_at_midpoint: false
+```
+
+Nessuno dei due dichiara `map`: ereditano quella di `generic` senza sovrascriverla, ed e'
+il motivo per cui non hanno un blocco `map` come `nina` e `asiair`. `load_dialects()` legge
+la cartella con `glob("*.yaml")`, quindi comparire nella cartella basta a esistere: non c'e'
+nessun elenco di nomi da aggiornare altrove.
+
+**Perche' ci sono, se nessun test li nomina.** I test di questo task verificano `generic`,
+`nina` e `asiair`. `sgp` ed `ekos` sono dati, non codice: la loro correttezza si vede su un
+header vero, che qui non abbiamo. Stanno nel piano perche' la sezione **File Structure** li
+elenca e perche' il progetto dichiara di coprire quei quattro software - non perche' un
+test li pretenda.
 
 Creare `src/sagitta/ingest/dialects.py`:
 
@@ -799,9 +865,7 @@ def detect_dialect(header: dict) -> str:
     return "generic"
 
 
-def apply_dialect(
-    header: dict, dialect_name: str
-) -> tuple[dict[str, object], dict[str, object]]:
+def apply_dialect(header: dict, dialect_name: str) -> tuple[dict[str, object], dict[str, object]]:
     """Traduce un header grezzo in campi canonici piu' keyword sconosciute.
 
     Le keyword nella lista `ignore` del dialetto non finiscono ne' fra i campi
@@ -824,19 +888,17 @@ def apply_dialect(
     unknown = {
         key: value
         for key, value in header.items()
-        if key not in consumed
-        and key not in dialect.ignore
-        and key not in structural
+        if key not in consumed and key not in dialect.ignore and key not in structural
     }
     return canonical, unknown
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/ingest/test_dialects.py -v`
 Expected: PASS, 7 test
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
@@ -856,7 +918,7 @@ git commit -m "feat: dialetti di header FITS come mappe YAML versionate"
 - Consumes: `FrameMeta` (Task 1), `detect_dialect` e `apply_dialect` (Task 2).
 - Produces: `read_frame(path: Path) -> tuple[FrameMeta, numpy.ndarray]`. L'array è sempre `float64` 2D.
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/conftest.py`:
 
@@ -887,9 +949,12 @@ Creare `tests/ingest/test_fits_reader.py`:
 
 ```python
 import datetime as dt
+from dataclasses import replace
 
 import numpy as np
+import pytest
 
+from sagitta.ingest.dialects import load_dialects
 from sagitta.ingest.fits_reader import read_frame
 
 
@@ -927,8 +992,24 @@ def test_date_obs_without_timezone_is_assumed_utc(write_fits):
         {"DATE-OBS": "2026-08-29T21:30:00", "EXPTIME": 60.0},
     )
     meta, _ = read_frame(path)
-    assert meta.date_obs.tzinfo is dt.timezone.utc
+    assert meta.date_obs.tzinfo is dt.UTC
     assert meta.date_obs.hour == 21
+
+
+def test_naive_date_obs_rejected_when_dialect_does_not_declare_timezone(write_fits, monkeypatch):
+    path = write_fits(
+        "naive-no-timezone.fits",
+        np.zeros((10, 10), dtype=np.float32),
+        {"DATE-OBS": "2026-08-29T21:30:00", "EXPTIME": 60.0},
+    )
+    import sagitta.ingest.fits_reader as fits_reader
+
+    dialects = load_dialects().copy()
+    dialects["generic"] = replace(dialects["generic"], date_obs_is_utc=False)
+    monkeypatch.setattr(fits_reader, "load_dialects", lambda: dialects)
+
+    with pytest.raises(ValueError, match="does not declare"):
+        read_frame(path)
 
 
 def test_unknown_keywords_are_preserved(write_fits):
@@ -965,12 +1046,12 @@ def test_bayer_pattern_is_read(write_fits):
     assert meta.bayer_pattern == "RGGB"
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/ingest/test_fits_reader.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.ingest.fits_reader'`
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Creare `src/sagitta/ingest/fits_reader.py`:
 
@@ -990,7 +1071,8 @@ from sagitta.ingest.schema import FrameMeta
 
 
 def _parse_date_obs(value: str, assume_utc: bool) -> dt.datetime:
-    """Interpreta DATE-OBS. Senza timezone esplicita si assume UTC.
+    """Interpreta DATE-OBS. Senza timezone esplicita si assume UTC solo se
+    il dialetto lo dichiara; altrimenti l'istante ambiguo viene rifiutato.
 
     L'assunzione va dichiarata all'utente: e' la sorgente di errore piu'
     comune nel join con i log di guida, specie nella notte del cambio ora.
@@ -998,8 +1080,13 @@ def _parse_date_obs(value: str, assume_utc: bool) -> dt.datetime:
     text = value.strip().replace("Z", "+00:00")
     parsed = dt.datetime.fromisoformat(text)
     if parsed.tzinfo is None:
-        tz = dt.timezone.utc if assume_utc else dt.timezone.utc
-        parsed = parsed.replace(tzinfo=tz)
+        if not assume_utc:
+            raise ValueError(
+                f"DATE-OBS {value!r} has no timezone and the dialect does not "
+                "declare one: the instant is ambiguous, and guessing it would "
+                "silently poison the join with the guiding logs"
+            )
+        parsed = parsed.replace(tzinfo=dt.UTC)
     return parsed
 
 
@@ -1012,9 +1099,7 @@ def read_frame(path: Path) -> tuple[FrameMeta, np.ndarray]:
         pixels = np.asarray(hdu.data, dtype=np.float64)
 
     if pixels.ndim != 2:
-        raise ValueError(
-            f"{path.name}: attesa immagine 2D, trovate {pixels.ndim} dimensioni"
-        )
+        raise ValueError(f"{path.name}: attesa immagine 2D, trovate {pixels.ndim} dimensioni")
 
     dialect_name = detect_dialect(raw_header)
     dialect = load_dialects()[dialect_name]
@@ -1068,12 +1153,12 @@ def read_frame(path: Path) -> tuple[FrameMeta, np.ndarray]:
     return meta, pixels
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/ingest/ -v`
 Expected: PASS, tutti i test di ingest
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
@@ -1097,7 +1182,7 @@ git commit -m "feat: lettura FITS con normalizzazione dei dialetti"
   - `evaluate_sampling(meta: FrameMeta, effective_pixel_factor: float = 1.0) -> SamplingVerdict`
   - Costante `MAX_SCALE_ARCSEC = 2.5`
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/measure/test_sampling.py`:
 
@@ -1117,7 +1202,7 @@ from sagitta.measure.sampling import (
 def _meta(pixel_size_um=3.76, focal_length_mm=530.0, binning=1) -> FrameMeta:
     return FrameMeta(
         path="/tmp/x.fits",
-        date_obs=dt.datetime(2026, 8, 29, 21, 0, tzinfo=dt.timezone.utc),
+        date_obs=dt.datetime(2026, 8, 29, 21, 0, tzinfo=dt.UTC),
         exposure_s=300.0,
         width=100,
         height=100,
@@ -1168,12 +1253,12 @@ def test_effective_pixel_factor_applies_for_osc():
     assert osc.scale_arcsec == pytest.approx(2 * mono.scale_arcsec, rel=1e-9)
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/measure/test_sampling.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.measure'`
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Creare `src/sagitta/measure/__init__.py` vuoto.
 
@@ -1199,9 +1284,7 @@ MAX_SCALE_ARCSEC = 2.5
 """Soglia oltre la quale le metriche di forma non vengono prodotte."""
 
 
-def pixel_scale_arcsec(
-    pixel_size_um: float, focal_length_mm: float, binning: int = 1
-) -> float:
+def pixel_scale_arcsec(pixel_size_um: float, focal_length_mm: float, binning: int = 1) -> float:
     """Scala in arcosecondi per pixel.
 
     scale = 206.265 * dimensione_pixel_um / focale_mm
@@ -1221,9 +1304,7 @@ class SamplingVerdict:
     reason: str
 
 
-def evaluate_sampling(
-    meta: FrameMeta, effective_pixel_factor: float = 1.0
-) -> SamplingVerdict:
+def evaluate_sampling(meta: FrameMeta, effective_pixel_factor: float = 1.0) -> SamplingVerdict:
     """Decide se le metriche di forma sono ammesse per questo frame.
 
     `effective_pixel_factor` vale 2.0 quando si misura su un sotto-reticolo
@@ -1244,9 +1325,10 @@ def evaluate_sampling(
             "metriche di forma non prodotte.",
         )
 
-    scale = pixel_scale_arcsec(
-        meta.pixel_size_um, meta.focal_length_mm, meta.binning or 1
-    ) * effective_pixel_factor
+    scale = (
+        pixel_scale_arcsec(meta.pixel_size_um, meta.focal_length_mm, meta.binning or 1)
+        * effective_pixel_factor
+    )
 
     if scale > MAX_SCALE_ARCSEC:
         return SamplingVerdict(
@@ -1257,17 +1339,15 @@ def evaluate_sampling(
             f"sarebbero rumore quantizzato, quindi non vengono prodotti.",
         )
 
-    return SamplingVerdict(
-        scale, True, f"Campionamento adeguato: {scale:.2f} arcsec/px."
-    )
+    return SamplingVerdict(scale, True, f"Campionamento adeguato: {scale:.2f} arcsec/px.")
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/measure/test_sampling.py -v`
 Expected: PASS, 6 test
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
@@ -1289,7 +1369,7 @@ git commit -m "feat: scala di campionamento e guardrail sulle metriche di forma"
   - `extract_green_sublattice(pixels: np.ndarray, pattern: str) -> np.ndarray` — restituisce un array di dimensioni `(H//2, W//2)`
   - Costante `GREEN_SUBLATTICE_SCALE_FACTOR = 2.0`
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/measure/test_cfa.py`:
 
@@ -1354,12 +1434,12 @@ def test_scale_factor_is_two():
     assert GREEN_SUBLATTICE_SCALE_FACTOR == 2.0
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/measure/test_cfa.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.measure.cfa'`
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Creare `src/sagitta/measure/cfa.py`:
 
@@ -1417,22 +1497,29 @@ def extract_green_sublattice(pixels: np.ndarray, pattern: str) -> np.ndarray:
 
     row_offset, col_offset = _GREEN_OFFSET[key]
     height, width = pixels.shape
-    usable_rows = (height - row_offset) // 2 * 2
-    usable_cols = (width - col_offset) // 2 * 2
 
-    view = pixels[
-        row_offset : row_offset + usable_rows,
-        col_offset : col_offset + usable_cols,
-    ]
-    return np.ascontiguousarray(view[::2, ::2])
+    # Un campione ogni due, a partire dall'offset del verde. Il taglio a
+    # (H // 2, W // 2) serve alle dimensioni dispari, dove lo slice con
+    # offset 0 restituirebbe una riga o una colonna in piu' di quante ne
+    # prometta la firma.
+    view = pixels[row_offset::2, col_offset::2]
+    return np.ascontiguousarray(view[: height // 2, : width // 2])
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+**Il conto da fare e' quanti campioni, non quanta larghezza.** Il numero di verdi su una
+riga e' `width // 2`, e non dipende dall'offset: con `col_offset = 1` e `width = 6` i verdi
+stanno a 1, 3, 5, e sono tre. Ragionare invece sull'intervallo utilizzabile a partire
+dall'offset - `(width - col_offset) // 2 * 2`, cioe' 4 - taglia la riga a 1..4 e ne fa
+uscire due. L'errore compare solo quando l'offset vale 1 e la dimensione e' pari, che e'
+il caso di **ogni sensore reale** in RGGB o BGGR: su un 6248x4176 si perderebbe una colonna
+su 3124, abbastanza poco da non vedersi a occhio e abbastanza da spostare le misure.
+
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/measure/test_cfa.py -v`
 Expected: PASS, 7 test
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
@@ -1456,7 +1543,7 @@ in isolamento su ritagli costruiti a mano, e la detection la userà.
   - `StarShape` dataclass: `x: float`, `y: float`, `flux: float`, `fwhm_px: float`, `eccentricity: float`, `position_angle_deg: float`
   - `measure_shape(cutout: np.ndarray, x0: int, y0: int) -> StarShape | None` — `x0, y0` sono le coordinate del pixel in alto a sinistra del ritaglio nell'immagine intera; restituisce `None` se i momenti non sono calcolabili.
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/measure/test_shape.py`:
 
@@ -1531,12 +1618,12 @@ def test_empty_cutout_returns_none():
     assert measure_shape(np.zeros((11, 11)), 0, 0) is None
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/measure/test_shape.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.measure.shape'`
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Creare `src/sagitta/measure/shape.py`:
 
@@ -1628,12 +1715,12 @@ def measure_shape(cutout: np.ndarray, x0: int, y0: int) -> StarShape | None:
     )
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/measure/test_shape.py -v`
 Expected: PASS, 8 test
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
@@ -1655,7 +1742,7 @@ git commit -m "feat: misura della forma stellare con momenti secondi"
   - `estimate_background(pixels: np.ndarray) -> tuple[float, float]` — restituisce `(mediana, sigma_robusta)`
   - `detect_stars(pixels: np.ndarray, settings: DetectionSettings | None = None) -> list[StarShape]`
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/measure/test_detect.py`:
 
@@ -1671,9 +1758,15 @@ from sagitta.measure.detect import (
 
 
 def _place_gaussian(image, cx, cy, sigma, amplitude):
+    # Il ritaglio va limitato ai bordi dell'immagine. Uno slice che parte da un
+    # indice negativo, in Python, conta dalla fine: per una stella a (5, 5) il
+    # ritaglio non verrebbe tagliato, verrebbe vuoto, e la somma fallirebbe.
     size = int(np.ceil(sigma * 6))
-    yy, xx = np.mgrid[cy - size : cy + size + 1, cx - size : cx + size + 1]
-    image[cy - size : cy + size + 1, cx - size : cx + size + 1] += amplitude * np.exp(
+    height, width = image.shape
+    y0, y1 = max(cy - size, 0), min(cy + size + 1, height)
+    x0, x1 = max(cx - size, 0), min(cx + size + 1, width)
+    yy, xx = np.mgrid[y0:y1, x0:x1]
+    image[y0:y1, x0:x1] += amplitude * np.exp(
         -0.5 * (((xx - cx) / sigma) ** 2 + ((yy - cy) / sigma) ** 2)
     )
     return image
@@ -1752,12 +1845,19 @@ def test_empty_field_returns_no_stars():
     assert detect_stars(_field(seed=5)) == []
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+**Sul ritaglio di `_place_gaussian`.** La gaussiana resta centrata in `(cx, cy)` anche
+quando il ritaglio viene tagliato: della stella al bordo si disegna solo la parte che sta
+dentro l'immagine, che e' esattamente cio' che `test_rejects_stars_touching_the_border`
+vuole vedere rifiutare. Senza il taglio agli estremi quel test non arriverebbe nemmeno a
+chiamare `detect_stars`: morirebbe dentro la fixture, e sembrerebbe un difetto della
+detection quando invece e' un difetto dell'impalcatura del test.
+
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/measure/test_detect.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.measure.detect'`
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Creare `src/sagitta/measure/detect.py`:
 
@@ -1808,9 +1908,7 @@ def estimate_background(pixels: np.ndarray) -> tuple[float, float]:
     return median, sigma
 
 
-def detect_stars(
-    pixels: np.ndarray, settings: DetectionSettings | None = None
-) -> list[StarShape]:
+def detect_stars(pixels: np.ndarray, settings: DetectionSettings | None = None) -> list[StarShape]:
     """Trova le stelle usabili e ne misura la forma.
 
     Restituisce solo le stelle che superano tutti i criteri di esclusione.
@@ -1881,12 +1979,12 @@ def detect_stars(
     return stars
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/measure/test_detect.py -v`
 Expected: PASS, 7 test
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
@@ -1910,7 +2008,7 @@ git commit -m "feat: detection stellare con criteri di esclusione"
   - `summarize_zones(stars: list[StarShape], width: int, height: int, min_stars: int = 8) -> dict[str, ZoneStats]`
   - Costante `ZONE_NAMES: tuple[str, ...]`
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/measure/test_zones.py`:
 
@@ -1927,9 +2025,7 @@ from sagitta.measure.zones import (
 
 
 def _star(x, y, fwhm=3.0, ecc=0.1, pa=0.0) -> StarShape:
-    return StarShape(
-        x=x, y=y, flux=1000.0, fwhm_px=fwhm, eccentricity=ecc, position_angle_deg=pa
-    )
+    return StarShape(x=x, y=y, flux=1000.0, fwhm_px=fwhm, eccentricity=ecc, position_angle_deg=pa)
 
 
 def test_radius_is_zero_at_centre():
@@ -1997,12 +2093,12 @@ def test_position_angle_median_is_circular():
     assert min(angle, 180.0 - angle) < 15.0
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/measure/test_zones.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.measure.zones'`
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Creare `src/sagitta/measure/zones.py`:
 
@@ -2091,9 +2187,7 @@ def summarize_zones(
             zone=name,
             n_stars=len(members),
             median_fwhm_px=float(np.median([s.fwhm_px for s in members])),
-            median_eccentricity=float(
-                np.median([s.eccentricity for s in members])
-            ),
+            median_eccentricity=float(np.median([s.eccentricity for s in members])),
             median_position_angle_deg=_circular_median_angle(
                 [s.position_angle_deg for s in members]
             ),
@@ -2101,12 +2195,12 @@ def summarize_zones(
     return stats
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/measure/test_zones.py -v`
 Expected: PASS, 8 test
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
@@ -2127,7 +2221,7 @@ git commit -m "feat: stratificazione della misura per zone del campo"
   - `FrameMeasurement` dataclass: `meta: FrameMeta`, `sampling: SamplingVerdict`, `n_stars: int`, `zones: dict[str, ZoneStats]`, `stars: list[StarShape]`, `refusals: list[str]`
   - `measure_frame(path: Path, settings: DetectionSettings | None = None) -> FrameMeasurement`
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/measure/test_frame.py`:
 
@@ -2228,12 +2322,12 @@ def test_missing_focal_length_refuses_but_still_reports_metadata(write_fits):
     assert any("focale" in r.lower() for r in result.refusals)
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/measure/test_frame.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.measure.frame'`
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Creare `src/sagitta/measure/frame.py`:
 
@@ -2273,9 +2367,7 @@ class FrameMeasurement:
     refusals: list[str] = field(default_factory=list)
 
 
-def measure_frame(
-    path: Path, settings: DetectionSettings | None = None
-) -> FrameMeasurement:
+def measure_frame(path: Path, settings: DetectionSettings | None = None) -> FrameMeasurement:
     """Misura un frame e restituisce statistiche per zona.
 
     Se il frame non e' utilizzabile per le metriche di forma, restituisce un
@@ -2317,7 +2409,7 @@ def measure_frame(
     return FrameMeasurement(meta, sampling, len(stars), zones, stars, refusals)
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/measure/ -v`
 Expected: PASS, tutti i test di measure
@@ -2326,7 +2418,7 @@ Nota: se `test_measures_stars_and_zones` fallisce sull'assenza di rifiuti, la gr
 stelle del test potrebbe non popolare a sufficienza qualche zona d'angolo. In quel caso
 ridurre ulteriormente il passo della griglia nel test, non allentare `min_stars`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
@@ -2346,7 +2438,7 @@ git commit -m "feat: pipeline di misura per singolo frame"
 - Consumes: niente. **`synth` non importa mai da `measure`**, per evitare validazione circolare.
 - Produces: `render_gaussian(image: np.ndarray, cx: float, cy: float, sigma_major: float, sigma_minor: float, theta_deg: float, amplitude: float) -> None` — disegna in place.
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/synth/test_psf.py`:
 
@@ -2359,8 +2451,9 @@ from sagitta.synth.psf import render_gaussian
 
 def test_renders_flux_at_the_requested_position():
     image = np.zeros((100, 100))
-    render_gaussian(image, cx=30.0, cy=70.0, sigma_major=2.0, sigma_minor=2.0,
-                    theta_deg=0.0, amplitude=100.0)
+    render_gaussian(
+        image, cx=30.0, cy=70.0, sigma_major=2.0, sigma_minor=2.0, theta_deg=0.0, amplitude=100.0
+    )
     peak_y, peak_x = np.unravel_index(np.argmax(image), image.shape)
     assert peak_x == 30
     assert peak_y == 70
@@ -2374,8 +2467,9 @@ def test_circular_star_is_symmetric():
 
 def test_elongated_star_is_wider_along_the_major_axis():
     image = np.zeros((60, 60))
-    render_gaussian(image, 30.0, 30.0, sigma_major=5.0, sigma_minor=2.0,
-                    theta_deg=0.0, amplitude=100.0)
+    render_gaussian(
+        image, 30.0, 30.0, sigma_major=5.0, sigma_minor=2.0, theta_deg=0.0, amplitude=100.0
+    )
     # theta 0 -> asse maggiore lungo x
     assert image[30, 24] > image[24, 30]
 
@@ -2394,12 +2488,12 @@ def test_rendering_accumulates():
     assert image[30, 30] == pytest.approx(2 * first, rel=1e-9)
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/synth/test_psf.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.synth'`
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Creare `src/sagitta/synth/__init__.py` vuoto.
 
@@ -2454,12 +2548,12 @@ def render_gaussian(
     )
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/synth/test_psf.py -v`
 Expected: PASS, 5 test
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
@@ -2493,7 +2587,7 @@ proprio quella che la misura deve saper distinguere:
 - **`field_rotation`** — allungamento **tangenziale** attorno al centro immagine, di ampiezza
   proporzionale al raggio.
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/synth/test_generator.py`:
 
@@ -2532,12 +2626,18 @@ def test_different_seeds_give_different_frames():
 
 def test_spacing_error_leaves_the_centre_clean():
     """Errore di spaziatura: nullo al centro, cresce col raggio."""
-    truth = Truth(seeing_sigma_px=2.0, spacing_error=3.0)
-    image = generate_frame(600, 600, truth, n_stars=600, seed=3)
-    centre = _median_in_box(image, 270, 330, 270, 330)
-    corner = _median_in_box(image, 0, 60, 0, 60)
-    # gli angoli sono piu' "sporchi" perche' le stelle sono allargate
-    assert corner > centre
+    clean = Truth(seeing_sigma_px=2.0)
+    spaced = Truth(seeing_sigma_px=2.0, spacing_error=3.0)
+    a = generate_frame(600, 600, clean, n_stars=600, seed=3)
+    b = generate_frame(600, 600, spaced, n_stars=600, seed=3)
+    # Stesso seed, stesse posizioni: il confronto appaiato isola l'allargamento
+    # invece di misurare quali stelle sono capitate dentro la finestra.
+    corner_clean = _median_in_box(a, 20, 140, 20, 140)
+    corner_spaced = _median_in_box(b, 20, 140, 20, 140)
+    centre_clean = _median_in_box(a, 240, 360, 240, 360)
+    centre_spaced = _median_in_box(b, 240, 360, 240, 360)
+    assert corner_spaced - corner_clean > 5.0
+    assert centre_spaced - centre_clean < 0.5
 
 
 def test_guide_elongation_affects_the_centre_too():
@@ -2558,12 +2658,28 @@ def test_tilt_makes_opposite_corners_differ():
     assert abs(left - right) > 0.5
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+**Perche' il confronto e' appaiato e non fra due zone dello stesso frame.** La mediana di
+una finestra dice soprattutto **quante stelle ci sono capitate dentro**, non quanto sono
+larghe: con 600 stelle su 600x600 una finestra da 60x60 ne contiene una manciata, e il suo
+valore salta fra 100 e 300 a seconda che una stella luminosa ci finisca o no. Confrontare
+l'angolo col centro dello stesso frame misura quindi il sorteggio delle posizioni, e passa
+o fallisce secondo il seme.
+
+Generare invece **due frame con lo stesso seme** mette le stelle nelle stesse posizioni: la
+sola differenza rimasta e' l'allargamento, ed e' quello che le due asserzioni leggono. Le
+finestre sono 120x120 perche' a 60x60 possono restare vuote - le stelle sono generate con
+un margine di 20 px dal bordo. La soglia dell'angolo e' 5.0 contro un effetto misurato fra
++57 e +379 su dodici semi, e quella del centro e' 0.5 contro uno scarto sotto 0.2: il
+centro non e' esattamente immune perche' la finestra copre un raggio normalizzato fino a
+circa 0.28, ma i due ordini di grandezza di distanza sono la cosa che il test deve
+dimostrare.
+
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/synth/test_generator.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.synth.generator'`
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Creare `src/sagitta/synth/generator.py`:
 
@@ -2607,9 +2723,7 @@ class Truth:
     field_rotation: float = 0.0
 
 
-def _local_shape(
-    truth: Truth, rx: float, ry: float
-) -> tuple[float, float, float]:
+def _local_shape(truth: Truth, rx: float, ry: float) -> tuple[float, float, float]:
     """Assi e orientamento della PSF in una posizione normalizzata del campo.
 
     rx e ry vanno da -1 a +1 rispetto al centro.
@@ -2658,13 +2772,11 @@ def generate_frame(
     ys = rng.uniform(margin, height - margin, size=n_stars)
     amplitudes = rng.uniform(300.0, 3000.0, size=n_stars)
 
-    for cx, cy, amplitude in zip(xs, ys, amplitudes):
+    for cx, cy, amplitude in zip(xs, ys, amplitudes, strict=True):
         rx = (cx - width / 2.0) / (width / 2.0)
         ry = (cy - height / 2.0) / (height / 2.0)
         sigma_major, sigma_minor, theta = _local_shape(truth, rx, ry)
-        render_gaussian(
-            image, cx, cy, sigma_major, sigma_minor, theta, amplitude
-        )
+        render_gaussian(image, cx, cy, sigma_major, sigma_minor, theta, amplitude)
 
     return image
 
@@ -2689,12 +2801,19 @@ def write_synthetic_fits(
     return path
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+**Sul `strict=True` in quel `zip`.** `ruff.toml` seleziona la famiglia `B`, che comprende
+`B905`: un `zip` senza `strict=` esplicito. La regola esiste perche' il comportamento
+predefinito **tronca in silenzio** alla sequenza piu' corta, ed e' un modo tipico di perdere
+dati senza accorgersene. Qui le tre sequenze hanno per costruzione lunghezza `n_stars`,
+quindi `strict=True` non cambia niente oggi: dice che se un giorno smettessero di averla si
+deve sentire un errore, invece di generare un frame con meno stelle di quelle chieste.
+
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/synth/ -v`
 Expected: PASS, tutti i test di synth
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
@@ -2720,7 +2839,7 @@ lasciare intendere di più.
 - Consumes: `measure_frame` (Task 9), `Truth`, `generate_frame`, `write_synthetic_fits` (Task 11).
 - Produces: `main(argv: list[str] | None = None) -> int`, comando `sagitta measure <path>`.
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/test_benchmark.py`:
 
@@ -2732,21 +2851,25 @@ dell'aberrazione iniettata sia quella che la misura restituisce.
 """
 
 import numpy as np
-import pytest
 
 from sagitta.measure.detect import DetectionSettings
 from sagitta.measure.frame import measure_frame
 from sagitta.synth.generator import Truth, generate_frame, write_synthetic_fits
 
 
-def _measure(tmp_path, truth, name, n_stars=1200, seed=11):
+def _measure(tmp_path, truth, name, n_stars=300, seed=11):
     pixels = generate_frame(900, 900, truth, n_stars=n_stars, seed=seed)
     path = write_synthetic_fits(tmp_path / f"{name}.fits", pixels)
-    # Il ritaglio deve essere piu' largo della stella: con l'aberrazione
-    # iniettata le stelle d'angolo arrivano a FWHM di circa 9 pixel, e una
-    # finestra troppo stretta troncherebbe i momenti secondi, falsando
-    # verso il basso sia FWHM che eccentricita'.
-    settings = DetectionSettings(cutout_radius=16, border_margin=20)
+    # Due parametri legati fra loro, e sbagliarli falsa la misura verso
+    # l'alto invece che verso il basso. I momenti secondi pesano ogni pixel
+    # della finestra: se dentro ci finisce anche solo l'ala di una vicina, o
+    # troppo fondo cielo, FWHM ed eccentricita' si gonfiano. Con 900x900 e
+    # 300 stelle la separazione media e' circa 52 pixel, comoda rispetto ai
+    # 21 della finestra; a 1200 stelle scende a 26 e la finestra pesca la
+    # vicina quasi sempre. Misurato: a 1200 stelle e raggio 16 una stella
+    # perfettamente tonda risulta con eccentricita' 0.85 e FWHM 13.9 contro
+    # i 5.9 teorici; a 300 stelle e raggio 10 vengono 0.08 e 5.96.
+    settings = DetectionSettings(cutout_radius=10, border_margin=20)
     return measure_frame(path, settings)
 
 
@@ -2834,13 +2957,13 @@ def test_spacing_and_tilt_are_distinguishable(tmp_path):
     assert asymmetry(tilt) > 0.25
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/test_benchmark.py -v`
 Expected: FAIL. Se i moduli esistono già dai task precedenti, il fallimento sarà su una
 soglia numerica, non su un import.
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Se i test falliscono su una soglia, la correzione va fatta **nel test o nei parametri della
 verità iniettata, mai allentando il guardrail o i criteri di esclusione**. Le soglie del test
@@ -2974,20 +3097,20 @@ Run: `python -c "import io; t=io.open('README.md',encoding='utf-8').read(); asse
 
 Expected: `README aggiornato`
 
-- [ ] **Step 4: Eseguire l'intera suite e verificare che passi**
+- [x] **Step 4: Eseguire l'intera suite e verificare che passi**
 
 Run: `python -m pytest -v`
 Expected: PASS, tutti i test
 
 Verificare anche la CLI a mano:
 
-Run: `python -c "from pathlib import Path; from sagitta.synth.generator import Truth, generate_frame, write_synthetic_fits; write_synthetic_fits(Path('demo.fits'), generate_frame(900, 900, Truth(2.0, spacing_error=2.0), n_stars=1200, seed=1))"`
+Run: `python -c "from pathlib import Path; from sagitta.synth.generator import Truth, generate_frame, write_synthetic_fits; write_synthetic_fits(Path('demo.fits'), generate_frame(1400, 1400, Truth(2.0, spacing_error=2.0), n_stars=700, seed=1))"`
 
 Run: `sagitta measure demo.fits`
 Expected: JSON con `n_stars` maggiore di 300, `sampling.shape_metrics_allowed` a `true`, e le
 statistiche delle sei zone.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
@@ -3014,7 +3137,16 @@ si rompe il packaging, l'entry point o il contratto JSON — cose che nessun tes
   `write_synthetic_fits` (Task 11).
 - Produces: i marker pytest `smoke` e `slow`, e il comando di gate `pytest -m smoke`.
 
-- [ ] **Step 1: Scrivere lo smoke test**
+- [x] **Step 1: Scrivere lo smoke test**
+
+I frame della CLI hanno numeri diversi da quelli del benchmark ma seguono la stessa regola:
+la stella vicina piu' prossima deve stare in media piu' lontana della finestra dei momenti
+secondi, cioe' oltre 21 px. Qui pero' il contratto JSON pretende piu' di 300 stelle
+rilevate, che a quella densita' richiedono un campo piu' largo: 700 stelle su 1400x1400 ne
+fanno rilevare circa 520. A 1200 stelle su 900x900 la CLI passerebbe lo stesso, ma il
+`demo.fits` del README mostrerebbe un FWHM di centro di 6.65 px per una verita' che ne vale
+4.71: la documentazione esibirebbe come esempio l'artefatto che il benchmark ha appena
+diagnosticato.
 
 Creare `tests/test_smoke.py`:
 
@@ -3053,7 +3185,7 @@ def _run_cli(*args: str) -> subprocess.CompletedProcess:
 @pytest.fixture
 def synthetic_light(tmp_path):
     pixels = generate_frame(
-        900, 900, Truth(seeing_sigma_px=2.0, spacing_error=2.0), n_stars=1200, seed=1
+        1400, 1400, Truth(seeing_sigma_px=2.0, spacing_error=2.0), n_stars=700, seed=1
     )
     return write_synthetic_fits(tmp_path / "light_0001.fits", pixels)
 
@@ -3068,14 +3200,18 @@ def test_cli_measures_a_frame_and_emits_valid_json(synthetic_light):
     assert len(payload) == 1
 
     frame = payload[0]
-    for key in ("path", "date_obs", "exposure_s", "sampling", "n_stars", "zones",
-                "refusals"):
+    for key in ("path", "date_obs", "exposure_s", "sampling", "n_stars", "zones", "refusals"):
         assert key in frame, f"campo mancante nel contratto JSON: {key}"
 
     assert frame["n_stars"] > 300
     assert frame["sampling"]["shape_metrics_allowed"] is True
     assert set(frame["zones"]) == {
-        "center", "mid", "corner_tl", "corner_tr", "corner_bl", "corner_br"
+        "center",
+        "mid",
+        "corner_tl",
+        "corner_tr",
+        "corner_bl",
+        "corner_br",
     }
     assert frame["zones"]["center"]["median_fwhm_px"] > 0
 
@@ -3083,7 +3219,7 @@ def test_cli_measures_a_frame_and_emits_valid_json(synthetic_light):
 def test_cli_measures_multiple_frames(tmp_path, synthetic_light):
     second = write_synthetic_fits(
         tmp_path / "light_0002.fits",
-        generate_frame(900, 900, Truth(seeing_sigma_px=2.4), n_stars=1200, seed=2),
+        generate_frame(1400, 1400, Truth(seeing_sigma_px=2.4), n_stars=700, seed=2),
     )
     result = _run_cli("measure", str(synthetic_light), str(second))
 
@@ -3110,15 +3246,36 @@ def test_cli_without_arguments_exits_nonzero_and_explains():
     assert "measure" in (result.stderr + result.stdout)
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+In `pyproject.toml`, aggiungere alla sezione `[tool.pytest.ini_options]` la riga che rende
+obbligatoria la registrazione dei marker:
+
+```toml
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--strict-markers"]
+```
+
+Senza questa riga un marker non registrato produce soltanto un avviso: `pytest.mark.smok`
+scritto male non selezionerebbe nulla e non lo direbbe a nessuno. Con la riga, un marker
+sconosciuto ferma la raccolta.
+
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/test_smoke.py -v`
-Expected: FAIL. Almeno `test_cli_without_arguments_exits_nonzero_and_explains` e
-`test_cli_reports_unreadable_file_without_crashing` falliscono, perché `python -m sagitta.cli`
-non è ancora un punto di ingresso eseguibile e `argparse` non è configurato per uscire con
-codice diverso da zero in modo prevedibile.
+Expected: FAIL. La raccolta si interrompe prima di eseguire qualsiasi test, con uscita 2:
 
-- [ ] **Step 3: Rendere il modulo eseguibile e configurare i marker**
+```text
+ERROR collecting tests/test_smoke.py
+'smoke' not found in `markers` configuration option
+```
+
+Il rosso di questo task e' il marker non registrato, non la CLI. `sagitta measure` e il
+blocco `if __name__ == "__main__"` esistono gia' dal Task 12, quindi i quattro test
+passerebbero: non c'e' nessun fallimento di comportamento da produrre qui, e cercarlo
+sarebbe cercare un rosso che non esiste. Se a questo punto leggi `4 passed`, vuol dire che
+la riga `addopts` dello Step 1 non e' stata scritta.
+
+- [x] **Step 3: Registrare i marker della suite**
 
 In `src/sagitta/cli.py` il blocco finale esiste già:
 
@@ -3135,24 +3292,25 @@ In `pyproject.toml`, sostituire la sezione `[tool.pytest.ini_options]` con:
 ```toml
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = ["--strict-markers"]
 markers = [
     "smoke: test end-to-end che lanciano l'eseguibile installato",
     "slow: test che superano i 10 secondi",
 ]
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/test_smoke.py -v`
-Expected: PASS, 4 test
+Expected: PASS, 4 test, e nessun `PytestUnknownMarkWarning` fra gli avvisi
 
 Run: `python -m pytest -m smoke -v`
-Expected: PASS, gli stessi 4 test, nessun test unitario raccolto
+Expected: PASS, gli stessi 4 test, nessun test unitario raccolto: `4 passed, 73 deselected`
 
 Run: `python -m pytest -v`
 Expected: PASS, l'intera suite
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
@@ -3192,12 +3350,13 @@ dice il vincolo globale sulle piattaforme.
 - Create: `.github/workflows/ci.yml`
 - Create: `ruff.toml`
 - Modify: `pyproject.toml` (dipendenze di sviluppo)
+- Modify: `tests/ingest/test_schema.py` (una riga, vedi Step 1-bis)
 
 **Interfaces:**
 - Consumes: la suite pytest (Task 1 in poi).
 - Produces: il workflow `ci`, che gira su `dev`, su `main` e sulle pull request verso `main`.
 
-- [ ] **Step 1: Configurare il linter e le dipendenze di sviluppo**
+- [x] **Step 1: Configurare il linter e le dipendenze di sviluppo**
 
 Creare `ruff.toml`:
 
@@ -3220,7 +3379,23 @@ In `pyproject.toml`, sostituire la sezione delle dipendenze opzionali con:
 dev = ["pytest>=8.0", "ruff>=0.6", "pip-audit>=2.7", "bandit>=1.7", "build>=1.2"]
 ```
 
-- [ ] **Step 2: Eseguire il linter e correggere ciò che segnala**
+- [x] **Step 1-bis: allineare il file gia' committato del Task 1**
+
+`ruff` segnala `UP017` su `tests/ingest/test_schema.py`, scritto al Task 1 quando ruff non
+c'era ancora. Il piano ora usa ovunque `dt.UTC`, che e' la forma che ruff pretende da
+Python 3.11 in su. Sostituisci **una sola occorrenza**, in quel file:
+
+    tzinfo=dt.timezone.utc   ->   tzinfo=dt.UTC
+
+Non toccare nient'altro di quel file.
+
+Run: `python -m pytest -q`
+Expected: 3 test verdi, come prima.
+
+Run: `ruff check .`
+Expected: nessun errore.
+
+- [x] **Step 2: Eseguire il linter e correggere ciò che segnala**
 
 Run: `pip install -e ".[dev]"`
 
@@ -3234,7 +3409,7 @@ Run: `ruff format --check .`
 Expected: può fallire, ed è normale la prima volta. In quel caso esegui `ruff format .` e
 includi la riformattazione nel commit di questo task.
 
-- [ ] **Step 3: Scrivere il workflow**
+- [x] **Step 3: Scrivere il workflow**
 
 Creare `.github/workflows/ci.yml`:
 
@@ -3299,14 +3474,48 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
 
+      # L'immagine del runner 3.11 porta setuptools 65.5.0, che ha
+      # vulnerabilita' note ed e' sotto il setuptools>=68 che pyproject
+      # dichiara. pip-audit lo vede e fa rosso, giustamente: si aggiorna,
+      # non si mette in ignore. Sul 3.13 questo passo non trova niente da
+      # fare, e costa qualche secondo.
+      - name: Aggiornare gli strumenti di packaging
+        run: python -m pip install --upgrade pip setuptools wheel
+
       - run: pip install -e ".[dev]"
 
       - name: Suite completa
         run: pytest -v --durations=10
 
       - name: Vulnerabilita' note nelle dipendenze
-        run: pip-audit --strict
+        run: pip-audit --skip-editable
 ```
+
+**Perche' `--skip-editable` e non `--strict`.** `pip-audit --strict` fallisce se anche una
+sola distribuzione dell'ambiente non e' auditabile, e `sagitta` installata in modalita'
+sviluppo non lo e': non sta su PyPI. L'audit si chiude con
+`Dependency not found on PyPI and could not be audited: sagitta (0.1.0)` e la CI resta rossa
+per sempre su una riga che non parla di nessuna vulnerabilita'. `--skip-editable` salta le
+distribuzioni editabili e continua ad auditare tutto il resto -- numpy, scipy, astropy,
+PyYAML e le loro transitive -- che e' esattamente cio' che la tabella del Task 15 promette.
+
+Le due opzioni **non si combinano**: `--strict --skip-editable` considera lo skip stesso un
+fallimento di raccolta e fallisce ugualmente, con `sagitta: distribution marked as editable`.
+Rinunciare a `--strict` costa poco qui, perche' l'unico pacchetto editabile dell'ambiente e'
+il progetto stesso -- nient'altro puo' diventarlo per sbaglio -- e lo skip resta visibile
+nell'output, in una tabella `Name / Skip Reason`, invece di sparire in silenzio.
+
+**Perche' il job `test` aggiorna setuptools prima di installare.** L'immagine dei runner
+GitHub per Python 3.11 include `setuptools 65.5.0`, che oggi ha sette vulnerabilita' note --
+da `PYSEC-2022-43012` a `PYSEC-2026-3447`, quest'ultima corretta solo in 83.0.0. Non e' una
+nostra dipendenza: e' l'ambiente su cui giriamo. Ma `pip-audit` audita l'ambiente **realmente
+installato**, quindi la vede, e fa rosso il job 3.11 mentre il 3.13 passa, perche' la sua
+immagine ne porta una recente.
+
+E' la stessa cosa che la sezione **Preparazione dell'ambiente** ha gia' fatto in locale, dove
+pip, setuptools e wheel sono aggiornati: il venv di sviluppo era allineato e la CI no, ed e'
+per questo che lo stesso comando passava sulla macchina e falliva sul runner. Un ambiente di
+verifica che non riproduce quello dichiarato non sta verificando quello che credi.
 
 **Sul pinning delle action.** Ogni `uses:` è agganciato al **SHA completo del commit**, con
 il tag in commento. Un tag come `@v4` è mobile: chi controlla quel repository può farlo
@@ -3330,7 +3539,7 @@ Un avvertimento se li ricontrolli da solo: `github/codeql-action` usa **tag anno
 Va dereferenziato con `repos/github/codeql-action/git/tags/<sha del tag>` per ottenere il SHA
 qui sopra. Gli altri quattro puntano direttamente al commit.
 
-- [ ] **Step 4: Verificare prima di spingere**
+- [x] **Step 4: Verificare prima di spingere**
 
 GitHub Actions non si esegue in locale, ma i comandi che il workflow lancia sì — e girano
 sulla stessa piattaforma del runner, che è tutto il vantaggio di essere Windows-only:
@@ -3341,7 +3550,7 @@ Run: `ruff format --check .`
 
 Run: `pytest -v --durations=10`
 
-Run: `pip-audit --strict`
+Run: `pip-audit --skip-editable`
 
 Expected: PASS su tutti e quattro
 
@@ -3351,7 +3560,7 @@ Run: `python -c "import yaml,pathlib; yaml.safe_load(pathlib.Path('.github/workf
 
 Expected: `yaml ok`
 
-- [ ] **Step 5: Commit e primo push**
+- [x] **Step 5: Commit e primo push**
 
 ```bash
 git add .
@@ -3361,6 +3570,13 @@ git commit -m "ci: lint, suite e audit su Windows a ogni push su dev"
 Run: `git push origin dev`
 
 Questo è il push che accende la CI per la prima volta. Verifica l'esito:
+
+La corsa non compare all'istante: fra il push e la sua registrazione passano alcuni secondi,
+e in quella finestra `gh run list` stampa **zero righe**. Un output vuoto non e' un
+fallimento, e' un "non ancora": aspetta e richiedi. Se dopo l'attesa la corsa risulta
+`in_progress`, richiedi ancora - dura qualche minuto.
+
+Run: `Start-Sleep -Seconds 30`
 
 Run: `gh run list --branch dev --limit 3`
 
@@ -3397,7 +3613,7 @@ gli altri non vedono.
 | Strumento | Cosa vede che gli altri non vedono | Dove gira |
 |---|---|---|
 | `tests/test_no_network.py` | che il programma non apra connessioni, dimostrato eseguendolo | suite, a ogni push |
-| `pip-audit` | vulnerabilità note nell'ambiente **realmente installato**, transitive comprese | `ci`, a ogni push |
+| `pip-audit` | vulnerabilità note nell'ambiente **realmente installato**, transitive comprese (il progetto stesso, editabile, è saltato) | `ci`, a ogni push |
 | `bandit` | errori nel **nostro** codice: subprocess, deserializzazione, tempfile | `ci`, a ogni push |
 | CodeQL | analisi semantica del flusso dei dati, che né bandit né pip-audit fanno | `security`, settimanale e sulle PR verso `main` |
 | Secret scanning + push protection | un segreto committato per sbaglio, **bloccato prima del push** | GitHub, sempre |
@@ -3436,7 +3652,7 @@ README, non taciuto.
 - Produces: il workflow `security` e il test che rende eseguibile la promessa "tutto in
   locale".
 
-- [ ] **Step 1: Scrivere il test che dimostra l'assenza di rete**
+- [x] **Step 1: Scrivere il test che dimostra l'assenza di rete**
 
 È il passo più importante del task. La spec promette che i dati dell'utente non lasciano la
 sua macchina: una promessa così si dimostra, non si dichiara.
@@ -3499,7 +3715,7 @@ def test_the_guard_itself_works(no_network):
         socket.socket()
 ```
 
-- [ ] **Step 2: Eseguire i test e verificare che passino**
+- [x] **Step 2: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/test_no_network.py -v`
 
@@ -3511,7 +3727,7 @@ tipico è `astropy`, che in certe configurazioni scarica tabelle di dati tempora
 caso si disattiva l'aggiornamento automatico via `astropy.utils.iers`, non si silenzia il
 test.
 
-- [ ] **Step 3: Scrivere il workflow di sicurezza**
+- [x] **Step 3: Scrivere il workflow di sicurezza**
 
 Creare `.github/workflows/security.yml`:
 
@@ -3558,7 +3774,7 @@ CodeQL è gratuito perché il repository è **pubblico**. Se un giorno diventass
 questo workflow inizierebbe a fallire a ogni esecuzione: è una delle ragioni per cui il
 vincolo globale vieta di cambiare la visibilità.
 
-- [ ] **Step 4: Configurare Dependabot**
+- [x] **Step 4: Configurare Dependabot**
 
 Creare `.github/dependabot.yml`:
 
@@ -3586,7 +3802,7 @@ updates:
     target-branch: dev
 ```
 
-- [ ] **Step 5: Scrivere la policy di sicurezza**
+- [x] **Step 5: Scrivere la policy di sicurezza**
 
 Creare `SECURITY.md` nella radice del repository:
 
@@ -3651,11 +3867,11 @@ di analisi che gira in locale, e il tempo speso li' e' tempo tolto alla corrette
 delle misure.
 ```
 
-- [ ] **Step 6: Verificare e committare**
+- [x] **Step 6: Verificare e committare**
 
 Run: `python -m pytest tests/test_no_network.py -v`
 
-Run: `pip-audit --strict`
+Run: `pip-audit --skip-editable`
 
 Run: `bandit -r src/sagitta -ll`
 
@@ -3704,7 +3920,7 @@ branch protection, che su questo progetto non usiamo.
 - Produces: `sagitta.__version__`, l'opzione `sagitta --version`, e il workflow `release` che
   scatta sui tag `v*`.
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/test_version.py`:
 
@@ -3737,12 +3953,12 @@ def test_cli_reports_the_same_version():
     assert sagitta.__version__ in result.stdout
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/test_version.py -v`
 Expected: FAIL con `AttributeError: module 'sagitta' has no attribute '__version__'`
 
-- [ ] **Step 3: Scrivere l'implementazione**
+- [x] **Step 3: Scrivere l'implementazione**
 
 Sostituire il contenuto di `src/sagitta/__init__.py` (finora vuoto) con:
 
@@ -3769,12 +3985,10 @@ from sagitta import __version__
 e subito dopo la creazione del parser, prima di `subparsers = ...`, aggiungere:
 
 ```python
-    parser.add_argument(
-        "--version", action="version", version=f"sagitta {__version__}"
-    )
+parser.add_argument("--version", action="version", version=f"sagitta {__version__}")
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `pip install -e ".[dev]"`
 
@@ -3784,7 +3998,7 @@ Expected: PASS, 3 test
 Run: `python -m pytest -v`
 Expected: PASS, l'intera suite
 
-- [ ] **Step 5: Scrivere il changelog**
+- [x] **Step 5: Scrivere il changelog**
 
 **Il `CHANGELOG.md` esiste già** nella radice, con l'intestazione e una sezione
 `## [Non rilasciato]`. **Non ricrearlo.** Sostituisci il contenuto della sezione
@@ -3823,7 +4037,7 @@ quanto segue, lasciando l'intestazione del file intatta:
   confronta configurazioni: sono gli stadi successivi.
 ```
 
-- [ ] **Step 6: Scrivere il workflow di release**
+- [x] **Step 6: Scrivere il workflow di release**
 
 Creare `.github/workflows/release.yml`:
 
@@ -3917,7 +4131,7 @@ Va fatto solo dopo aver rivendicato il nome `sagitta` su PyPI e verificato che s
 Finché l'artefatto giusto per l'utente finale è l'eseguibile nativo e non la wheel, PyPI
 serve solo agli sviluppatori e può aspettare.
 
-- [ ] **Step 7: Verificare la procedura di release in locale**
+- [x] **Step 7: Verificare la procedura di release in locale**
 
 Run: `python -m build`
 
@@ -3930,7 +4144,7 @@ Expected: `versione allineata`
 Run: `python -c "import yaml,pathlib; yaml.safe_load(pathlib.Path('.github/workflows/release.yml').read_text(encoding='utf-8')); print('yaml ok')"`
 Expected: `yaml ok`
 
-- [ ] **Step 8: Commit e push su `dev`**
+- [x] **Step 8: Commit e push su `dev`**
 
 ```bash
 git add .

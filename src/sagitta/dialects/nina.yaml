@@ -1,0 +1,9 @@
+name: nina
+match:
+  software_contains: ["N.I.N.A", "NINA"]
+inherits: generic
+map:
+  ambient_temp_c: [FOCTEMP, AMBTEMP]
+  rotation_deg: [ROTATANG]
+date_obs_is_utc: true
+date_obs_at_midpoint: false

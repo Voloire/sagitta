@@ -10,33 +10,28 @@ nell'occhio di chi guarda.
 
 ---
 
-## ⚠️ Stato: in costruzione. Non c'è ancora niente da usare.
+## Stato
 
-**Questo repository al momento contiene documenti, non software.** Non c'è codice, non ci
-sono release, non c'è niente da installare. Se sei arrivato qui cercando uno strumento
-funzionante, oggi non c'è.
+Implementato: lettura FITS con normalizzazione dei dialetti di header, misura della
+forma stellare per stella tramite momenti secondi, stratificazione per zona del campo,
+guardrail di campionamento, gestione delle sub a colori su sotto-reticolo verde,
+generatore di sub sintetiche e benchmark di validazione, interfaccia a riga di comando.
 
-**Non ci sono date, e non c'è una roadmap con scadenze.** È un progetto in divenire, portato
-avanti quando c'è tempo. Quello che segue descrive l'intenzione e il metodo, non un impegno a
-consegnare qualcosa entro un momento qualsiasi. Se leggi un "sarà", leggilo come "è così che
-è disegnato", non come una promessa.
+Non ancora implementato: join con i log di guida, classificatore diagnostico, banco di
+prova statistico, interfaccia grafica.
+
+**Non ci sono date, e non c'è una roadmap con scadenze.** È un progetto in divenire.
 
 | | |
 |---|---|
-| Codice | nessuno |
-| Release | nessuna |
-| Fase | Stadio 0 e 1, in partenza |
+| Fase | Stadio 0 e 1 completati |
 | Piattaforma | Windows 11 soltanto |
 
-Quello che c'è, ed è tutto ciò che c'è:
+Documenti di riferimento:
 
 - [`docs/design.md`](docs/design.md) — la specifica: cosa fa, cosa non fa, e perché
-- [`docs/plan-stadio-0-1.md`](docs/plan-stadio-0-1.md) — il piano di implementazione dei
-  primi due stadi, passo per passo
-- [`CHANGELOG.md`](CHANGELOG.md) — cosa cambia a ogni versione, da qui in avanti
-
-Il piano è pubblico perché il ragionamento che porta a una misura conta quanto la misura. Chi
-vuole contestare un metodo deve poterlo leggere.
+- [`docs/plan-stadio-0-1.md`](docs/plan-stadio-0-1.md) — il piano di implementazione
+- [`CHANGELOG.md`](CHANGELOG.md) — cosa cambia a ogni versione
 
 ---
 
@@ -130,13 +125,9 @@ i checksum: non fa sparire l'avviso, ma rende verificabile ciò che l'avviso met
 
 ---
 
-## Come sarà usato
+## Uso
 
-**Niente di quanto segue funziona oggi**, e non c'è una data in cui funzionerà. È qui
-perché il piano lo prescrive e perché un lettore possa giudicare in anticipo se uno strumento
-del genere gli servirebbe.
-
-Installazione, una volta che ci sarà una release:
+Installazione, quando ci sarà una release pubblicata:
 
 ```bash
 pip install sagitta

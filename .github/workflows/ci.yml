@@ -1,0 +1,75 @@
+name: ci
+
+# I due rami del progetto, piu' le pull request verso main: e' la CI
+# sulla pull request a dire se dev e' pronto per il merge.
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Privilegio minimo: questa CI legge il codice e non scrive niente.
+# Senza questo blocco il token eredita permessi di scrittura inutili.
+permissions:
+  contents: read
+
+# Un push che ne supera un altro cancella la corsa precedente: non per
+# risparmiare minuti, che sono illimitati, ma per non leggere l'esito di
+# un commit gia' superato.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - run: pip install -e ".[dev]"
+
+      - run: ruff check .
+
+      - run: ruff format --check .
+
+      - name: Errori di sicurezza nel nostro codice
+        run: bandit -r src/sagitta -ll
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.11 e' il minimo che dichiariamo in requires-python, 3.13 e'
+        # quello che verra' impacchettato: si verificano entrambi gli
+        # estremi di cio' che promettiamo, e niente altro.
+        python-version: ["3.11", "3.13"]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      # L'immagine del runner 3.11 porta setuptools 65.5.0, che ha
+      # vulnerabilita' note ed e' sotto il setuptools>=68 che pyproject
+      # dichiara. pip-audit lo vede e fa rosso, giustamente: si aggiorna,
+      # non si mette in ignore. Sul 3.13 questo passo non trova niente da
+      # fare, e costa qualche secondo.
+      - name: Aggiornare gli strumenti di packaging
+        run: python -m pip install --upgrade pip setuptools wheel
+
+      - run: pip install -e ".[dev]"
+
+      - name: Suite completa
+        run: pytest -v --durations=10
+
+      - name: Vulnerabilita' note nelle dipendenze
+        run: pip-audit --skip-editable

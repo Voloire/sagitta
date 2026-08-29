@@ -12,15 +12,30 @@ scadenza — non ci sono date su questo progetto.
 
 ## [Non rilasciato]
 
-Nessuna release pubblicata. Il repository contiene per ora soltanto documenti: la specifica
-del progetto e il piano di implementazione dei primi due stadi. Non c'è codice.
+## [0.1.0]
 
-### Impostato
+### Aggiunto
 
-- Specifica del progetto in `docs/design.md`: cosa misura Sagitta, cosa non fa per scelta, e
-  il ragionamento che porta a ciascuna decisione.
-- Piano di implementazione degli Stadi 0 e 1 in `docs/plan-stadio-0-1.md`, eseguibile passo
-  per passo.
-- Rami `dev` e `main`, con il rilascio che parte da un tag su `main`.
-- Integrazione continua, controlli di sicurezza e workflow di rilascio, descritti nel piano e
-  da creare durante l'esecuzione.
+- Lettura di file FITS con normalizzazione degli header verso uno schema canonico,
+  tramite mappe dialetto in YAML versionate nel repository (NINA, SGP, ASIAIR, Ekos,
+  piu' un dialetto generico).
+- Misura della forma stellare per stella con momenti secondi pesati sul flusso: FWHM,
+  eccentricita' e angolo di posizione dell'asse maggiore.
+- Detection stellare con criteri di esclusione per stelle sature, al bordo, pixel caldi
+  isolati e basso rapporto segnale-rumore.
+- Stratificazione della misura per zona del campo: centro, anello intermedio e i quattro
+  angoli separatamente.
+- Guardrail di campionamento: sopra 2.5 arcsec/pixel le metriche di forma non vengono
+  prodotte e il programma spiega perche'.
+- Gestione delle sub a colori: misura su un sotto-reticolo verde estratto senza alcuna
+  interpolazione, mai su un'immagine demosaicizzata.
+- Generatore di sub sintetiche con aberrazione iniettata nota, e benchmark che verifica
+  che la misura ne restituisca la corretta dipendenza dalla posizione nel campo.
+- Interfaccia a riga di comando `sagitta measure`, con output JSON.
+
+### Note
+
+- I valori `HFR` e `FWHM` eventualmente presenti negli header vengono ignorati di
+  proposito: sono incomparabili fra software diversi e vengono sempre rimisurati.
+- Questa versione misura e basta. Non attribuisce cause, non legge i log di guida e non
+  confronta configurazioni: sono gli stadi successivi.
