@@ -1543,7 +1543,7 @@ in isolamento su ritagli costruiti a mano, e la detection la userà.
   - `StarShape` dataclass: `x: float`, `y: float`, `flux: float`, `fwhm_px: float`, `eccentricity: float`, `position_angle_deg: float`
   - `measure_shape(cutout: np.ndarray, x0: int, y0: int) -> StarShape | None` — `x0, y0` sono le coordinate del pixel in alto a sinistra del ritaglio nell'immagine intera; restituisce `None` se i momenti non sono calcolabili.
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/measure/test_shape.py`:
 
@@ -1618,12 +1618,12 @@ def test_empty_cutout_returns_none():
     assert measure_shape(np.zeros((11, 11)), 0, 0) is None
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/measure/test_shape.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.measure.shape'`
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Creare `src/sagitta/measure/shape.py`:
 
@@ -1715,12 +1715,12 @@ def measure_shape(cutout: np.ndarray, x0: int, y0: int) -> StarShape | None:
     )
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/measure/test_shape.py -v`
 Expected: PASS, 8 test
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
