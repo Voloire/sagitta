@@ -2839,7 +2839,7 @@ lasciare intendere di più.
 - Consumes: `measure_frame` (Task 9), `Truth`, `generate_frame`, `write_synthetic_fits` (Task 11).
 - Produces: `main(argv: list[str] | None = None) -> int`, comando `sagitta measure <path>`.
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/test_benchmark.py`:
 
@@ -2957,13 +2957,13 @@ def test_spacing_and_tilt_are_distinguishable(tmp_path):
     assert asymmetry(tilt) > 0.25
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/test_benchmark.py -v`
 Expected: FAIL. Se i moduli esistono già dai task precedenti, il fallimento sarà su una
 soglia numerica, non su un import.
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Se i test falliscono su una soglia, la correzione va fatta **nel test o nei parametri della
 verità iniettata, mai allentando il guardrail o i criteri di esclusione**. Le soglie del test
@@ -3097,7 +3097,7 @@ Run: `python -c "import io; t=io.open('README.md',encoding='utf-8').read(); asse
 
 Expected: `README aggiornato`
 
-- [ ] **Step 4: Eseguire l'intera suite e verificare che passi**
+- [x] **Step 4: Eseguire l'intera suite e verificare che passi**
 
 Run: `python -m pytest -v`
 Expected: PASS, tutti i test
@@ -3110,7 +3110,7 @@ Run: `sagitta measure demo.fits`
 Expected: JSON con `n_stars` maggiore di 300, `sampling.shape_metrics_allowed` a `true`, e le
 statistiche delle sei zone.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
