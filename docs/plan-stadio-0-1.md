@@ -260,6 +260,7 @@ finito**: si corregge prima di passare al successivo.
 - Nessun numero prodotto da un modello linguistico. In questo blocco non esiste alcuna integrazione LLM.
 - Ogni funzione pubblica ha type hints. Test con `pytest`.
 - **Versionamento SemVer**, sorgente unica in `pyproject.toml`, letta a runtime dai metadati del package. Serie `0.x` finché il join con i log di guida non è dentro.
+- **Ogni release ha una voce nel `CHANGELOG.md`, senza eccezioni.** Si scrive sotto `[Non rilasciato]` mentre si lavora, e quella sezione diventa il corpo della release quando si crea il tag. Un rilascio senza voce nel changelog non è un rilascio: è un file comparso dal nulla.
 - **Account GitHub Free, repository pubblico, nessuna funzionalità a pagamento.** Essendo pubblico: minuti di Actions **illimitati**, CodeQL, secret scanning con push protection e attestazioni di provenienza sono tutti gratuiti. Se una misura richiedesse comunque un piano a pagamento, non entra.
 - **Sicurezza proporzionata.** Il metro è: chi scarica deve poter verificare che l'eseguibile sia quello costruito dalla nostra CI, e che il programma non mandi i suoi dati da nessuna parte. Tutto ciò che serve a quelle due cose si fa; il resto — SBOM firmato, SLSA L3, threat model formale — no.
 - **Ogni `uses:` nei workflow è pinnato al SHA completo del commit**, con il tag in commento. Un tag mobile è codice di terzi che gira nella nostra pipeline con il nostro token.
@@ -451,8 +452,9 @@ sagitta = ["dialects/*.yaml"]
 testpaths = ["tests"]
 ```
 
-`LICENSE` **esiste già** nella radice, con il testo standard MIT e il 2026 come anno.
-Verifica che ci sia e non toccarlo.
+`LICENSE`, `README.md` e `CHANGELOG.md` **esistono già** nella radice. Verifica che ci
+siano e **non toccarli in questo task**: il README viene aggiornato nel Task 12 e il
+changelog nel Task 16, con istruzioni precise su cosa sostituire.
 
 Creare `src/sagitta/__init__.py` vuoto e `src/sagitta/ingest/__init__.py` vuoto.
 
@@ -2711,7 +2713,7 @@ lasciare intendere di più.
 
 **Files:**
 - Create: `src/sagitta/cli.py`
-- Create: `README.md`
+- Modify: `README.md` (due sostituzioni, il file esiste già)
 - Test: `tests/test_benchmark.py`
 
 **Interfaces:**
@@ -2907,62 +2909,70 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-Creare `README.md`:
+**Il `README.md` esiste già** nella radice, ed è molto più esteso di quanto serva
+riprodurre qui: contiene lo scopo del progetto, la tabella delle firme diagnostiche, i caveat
+e le istruzioni di sviluppo. **Non sovrascriverlo e non riscriverlo.**
+
+Devi solo togliere l'avvertenza che dice che non esiste ancora codice, perché a questo punto
+non è più vera. Fai **due sostituzioni esatte**, e nient'altro.
+
+**Sostituzione 1.** Trova questo titolo di sezione:
+
+    ## ⚠️ Stato: in costruzione. Non c'è ancora niente da usare.
+
+e sostituisci quel titolo **e tutto ciò che lo segue fino alla riga `---` esclusa** con:
 
 ```markdown
-# Sagitta
-
-Referto forense e banco di prova per astrofotografia.
-
-Sagitta misura la forma stellare delle tue sub per zona del campo e, quando i dati lo
-consentono, distingue le cause che hanno la stessa apparenza ma una diversa dipendenza
-dalla posizione nel sensore.
-
 ## Stato
 
-In costruzione. Attualmente implementato: lettura FITS con normalizzazione dei
-dialetti di header, misura della forma stellare per stella tramite momenti secondi,
-stratificazione per zona del campo, guardrail di campionamento.
+Implementato: lettura FITS con normalizzazione dei dialetti di header, misura della
+forma stellare per stella tramite momenti secondi, stratificazione per zona del campo,
+guardrail di campionamento, gestione delle sub a colori su sotto-reticolo verde,
+generatore di sub sintetiche e benchmark di validazione, interfaccia a riga di comando.
 
-Non ancora implementato: join con i log di guida, classificatore diagnostico,
-banco di prova statistico, interfaccia grafica.
+Non ancora implementato: join con i log di guida, classificatore diagnostico, banco di
+prova statistico, interfaccia grafica.
 
-## Cosa NON fa, per scelta
+**Non ci sono date, e non c'è una roadmap con scadenze.** È un progetto in divenire.
 
-- Non controlla la montatura, la camera o il focheggiatore. Legge e basta.
-- Non genera sequenze eseguibili.
-- Non elabora immagini e non produce immagini migliorate.
-- Non si fida dei valori HFR o FWHM scritti negli header: li ignora e rimisura.
-- Non produce metriche di forma sotto i 2.5 arcsec/pixel: sotto quella soglia
-  eccentricita' e angolo sono rumore quantizzato, e un numero sarebbe una bugia.
-- Non chiama **tilt** cio' che misura da light frame. Da una singola posa si puo'
-  misurare **aberrazione di campo**, non il tilt del sensore: sono cose diverse e
-  confonderle e' il modo piu' comune di dare consigli sbagliati.
+| | |
+|---|---|
+| Fase | Stadio 0 e 1 completati |
+| Piattaforma | Windows 11 soltanto |
 
-## Validazione
+Documenti di riferimento:
 
-Lo strato di misura e' validato su **dati sintetici con verita' iniettata nota**:
-frame generati con errore di guida, errore di spaziatura, tilt e rotazione di campo
-di ampiezza controllata, su cui si verifica che la misura restituisca la dipendenza
-spaziale corretta.
+- [`docs/design.md`](docs/design.md) — la specifica: cosa fa, cosa non fa, e perché
+- [`docs/plan-stadio-0-1.md`](docs/plan-stadio-0-1.md) — il piano di implementazione
+- [`CHANGELOG.md`](CHANGELOG.md) — cosa cambia a ogni versione
+```
 
-Questo valida **la misura**, non un classificatore diagnostico: il classificatore non
-e' ancora stato costruito, e quando lo sara' avra' il suo benchmark separato.
+**Sostituzione 2.** Trova questa sezione:
 
-Per eseguire la validazione:
+    ## Come sarà usato
 
-    pytest tests/test_benchmark.py -v
+    **Niente di quanto segue funziona oggi**, e non c'è una data in cui funzionerà. È qui
+    perché il piano lo prescrive e perché un lettore possa giudicare in anticipo se uno strumento
+    del genere gli servirebbe.
 
+    Installazione, una volta che ci sarà una release:
+
+e sostituisci **quelle righe** con:
+
+```markdown
 ## Uso
 
-    sagitta measure /percorso/alle/sub/*.fits
-
-Produce JSON su stdout.
-
-## Licenza
-
-MIT.
+Installazione, quando ci sarà una release pubblicata:
 ```
+
+Non toccare niente altro del README: né i caveat, né la sezione sullo scopo, né quella
+sullo sviluppo, né quella sulle versioni.
+
+Verifica poi che le due avvertenze siano sparite:
+
+Run: `python -c "import io; t=io.open('README.md',encoding='utf-8').read(); assert 'in costruzione' not in t and 'Niente di quanto segue funziona oggi' not in t; print('README aggiornato')"`
+
+Expected: `README aggiornato`
 
 - [ ] **Step 4: Eseguire l'intera suite e verificare che passi**
 
@@ -3686,7 +3696,7 @@ branch protection, che su questo progetto non usiamo.
 - Modify: `src/sagitta/__init__.py`
 - Modify: `src/sagitta/cli.py` (opzione `--version`)
 - Create: `tests/test_version.py`
-- Create: `CHANGELOG.md`
+- Modify: `CHANGELOG.md` (esiste già, si aggiunge la voce 0.1.0)
 - Create: `.github/workflows/release.yml`
 
 **Interfaces:**
@@ -3776,17 +3786,12 @@ Expected: PASS, l'intera suite
 
 - [ ] **Step 5: Scrivere il changelog**
 
-Creare `CHANGELOG.md` nella radice del repository:
+**Il `CHANGELOG.md` esiste già** nella radice, con l'intestazione e una sezione
+`## [Non rilasciato]`. **Non ricrearlo.** Sostituisci il contenuto della sezione
+`## [Non rilasciato]` — cioè tutto ciò che sta fra quel titolo e la fine del file — con
+quanto segue, lasciando l'intestazione del file intatta:
 
 ```markdown
-# Changelog
-
-Formato: [Keep a Changelog](https://keepachangelog.com/it/1.1.0/).
-Versionamento: [SemVer](https://semver.org/lang/it/).
-
-Si resta sulla serie `0.x` finche' il join con i log di guida non e' dentro: fino ad
-allora il formato JSON di output puo' ancora cambiare fra una minor e l'altra.
-
 ## [Non rilasciato]
 
 ## [0.1.0]
