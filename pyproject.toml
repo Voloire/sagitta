@@ -30,3 +30,8 @@ sagitta = ["dialects/*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = ["--strict-markers"]
+markers = [
+    "smoke: test end-to-end che lanciano l'eseguibile installato",
+    "slow: test che superano i 10 secondi",
+]

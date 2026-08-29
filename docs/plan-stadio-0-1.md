@@ -3137,7 +3137,7 @@ si rompe il packaging, l'entry point o il contratto JSON — cose che nessun tes
   `write_synthetic_fits` (Task 11).
 - Produces: i marker pytest `smoke` e `slow`, e il comando di gate `pytest -m smoke`.
 
-- [ ] **Step 1: Scrivere lo smoke test**
+- [x] **Step 1: Scrivere lo smoke test**
 
 I frame della CLI hanno numeri diversi da quelli del benchmark ma seguono la stessa regola:
 la stella vicina piu' prossima deve stare in media piu' lontana della finestra dei momenti
@@ -3259,7 +3259,7 @@ Senza questa riga un marker non registrato produce soltanto un avviso: `pytest.m
 scritto male non selezionerebbe nulla e non lo direbbe a nessuno. Con la riga, un marker
 sconosciuto ferma la raccolta.
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/test_smoke.py -v`
 Expected: FAIL. La raccolta si interrompe prima di eseguire qualsiasi test, con uscita 2:
@@ -3275,7 +3275,7 @@ passerebbero: non c'e' nessun fallimento di comportamento da produrre qui, e cer
 sarebbe cercare un rosso che non esiste. Se a questo punto leggi `4 passed`, vuol dire che
 la riga `addopts` dello Step 1 non e' stata scritta.
 
-- [ ] **Step 3: Registrare i marker della suite**
+- [x] **Step 3: Registrare i marker della suite**
 
 In `src/sagitta/cli.py` il blocco finale esiste già:
 
@@ -3299,7 +3299,7 @@ markers = [
 ]
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/test_smoke.py -v`
 Expected: PASS, 4 test, e nessun `PytestUnknownMarkWarning` fra gli avvisi
@@ -3310,7 +3310,7 @@ Expected: PASS, gli stessi 4 test, nessun test unitario raccolto: `4 passed, 73 
 Run: `python -m pytest -v`
 Expected: PASS, l'intera suite
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
