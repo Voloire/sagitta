@@ -1471,15 +1471,22 @@ def extract_green_sublattice(pixels: np.ndarray, pattern: str) -> np.ndarray:
 
     row_offset, col_offset = _GREEN_OFFSET[key]
     height, width = pixels.shape
-    usable_rows = (height - row_offset) // 2 * 2
-    usable_cols = (width - col_offset) // 2 * 2
 
-    view = pixels[
-        row_offset : row_offset + usable_rows,
-        col_offset : col_offset + usable_cols,
-    ]
-    return np.ascontiguousarray(view[::2, ::2])
+    # Un campione ogni due, a partire dall'offset del verde. Il taglio a
+    # (H // 2, W // 2) serve alle dimensioni dispari, dove lo slice con
+    # offset 0 restituirebbe una riga o una colonna in piu' di quante ne
+    # prometta la firma.
+    view = pixels[row_offset::2, col_offset::2]
+    return np.ascontiguousarray(view[: height // 2, : width // 2])
 ```
+
+**Il conto da fare e' quanti campioni, non quanta larghezza.** Il numero di verdi su una
+riga e' `width // 2`, e non dipende dall'offset: con `col_offset = 1` e `width = 6` i verdi
+stanno a 1, 3, 5, e sono tre. Ragionare invece sull'intervallo utilizzabile a partire
+dall'offset - `(width - col_offset) // 2 * 2`, cioe' 4 - taglia la riga a 1..4 e ne fa
+uscire due. L'errore compare solo quando l'offset vale 1 e la dimensione e' pari, che e'
+il caso di **ogni sensore reale** in RGGB o BGGR: su un 6248x4176 si perderebbe una colonna
+su 3124, abbastanza poco da non vedersi a occhio e abbastanza da spostare le misure.
 
 - [ ] **Step 4: Eseguire i test e verificare che passino**
 
