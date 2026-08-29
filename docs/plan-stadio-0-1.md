@@ -2851,7 +2851,6 @@ dell'aberrazione iniettata sia quella che la misura restituisce.
 """
 
 import numpy as np
-import pytest
 
 from sagitta.measure.detect import DetectionSettings
 from sagitta.measure.frame import measure_frame
@@ -3105,7 +3104,7 @@ Expected: PASS, tutti i test
 
 Verificare anche la CLI a mano:
 
-Run: `python -c "from pathlib import Path; from sagitta.synth.generator import Truth, generate_frame, write_synthetic_fits; write_synthetic_fits(Path('demo.fits'), generate_frame(900, 900, Truth(2.0, spacing_error=2.0), n_stars=1200, seed=1))"`
+Run: `python -c "from pathlib import Path; from sagitta.synth.generator import Truth, generate_frame, write_synthetic_fits; write_synthetic_fits(Path('demo.fits'), generate_frame(1400, 1400, Truth(2.0, spacing_error=2.0), n_stars=700, seed=1))"`
 
 Run: `sagitta measure demo.fits`
 Expected: JSON con `n_stars` maggiore di 300, `sampling.shape_metrics_allowed` a `true`, e le
@@ -3139,6 +3138,15 @@ si rompe il packaging, l'entry point o il contratto JSON — cose che nessun tes
 - Produces: i marker pytest `smoke` e `slow`, e il comando di gate `pytest -m smoke`.
 
 - [ ] **Step 1: Scrivere lo smoke test**
+
+I frame della CLI hanno numeri diversi da quelli del benchmark ma seguono la stessa regola:
+la stella vicina piu' prossima deve stare in media piu' lontana della finestra dei momenti
+secondi, cioe' oltre 21 px. Qui pero' il contratto JSON pretende piu' di 300 stelle
+rilevate, che a quella densita' richiedono un campo piu' largo: 700 stelle su 1400x1400 ne
+fanno rilevare circa 520. A 1200 stelle su 900x900 la CLI passerebbe lo stesso, ma il
+`demo.fits` del README mostrerebbe un FWHM di centro di 6.65 px per una verita' che ne vale
+4.71: la documentazione esibirebbe come esempio l'artefatto che il benchmark ha appena
+diagnosticato.
 
 Creare `tests/test_smoke.py`:
 
@@ -3177,7 +3185,7 @@ def _run_cli(*args: str) -> subprocess.CompletedProcess:
 @pytest.fixture
 def synthetic_light(tmp_path):
     pixels = generate_frame(
-        900, 900, Truth(seeing_sigma_px=2.0, spacing_error=2.0), n_stars=1200, seed=1
+        1400, 1400, Truth(seeing_sigma_px=2.0, spacing_error=2.0), n_stars=700, seed=1
     )
     return write_synthetic_fits(tmp_path / "light_0001.fits", pixels)
 
@@ -3211,7 +3219,7 @@ def test_cli_measures_a_frame_and_emits_valid_json(synthetic_light):
 def test_cli_measures_multiple_frames(tmp_path, synthetic_light):
     second = write_synthetic_fits(
         tmp_path / "light_0002.fits",
-        generate_frame(900, 900, Truth(seeing_sigma_px=2.4), n_stars=1200, seed=2),
+        generate_frame(1400, 1400, Truth(seeing_sigma_px=2.4), n_stars=700, seed=2),
     )
     result = _run_cli("measure", str(synthetic_light), str(second))
 
