@@ -1758,9 +1758,15 @@ from sagitta.measure.detect import (
 
 
 def _place_gaussian(image, cx, cy, sigma, amplitude):
+    # Il ritaglio va limitato ai bordi dell'immagine. Uno slice che parte da un
+    # indice negativo, in Python, conta dalla fine: per una stella a (5, 5) il
+    # ritaglio non verrebbe tagliato, verrebbe vuoto, e la somma fallirebbe.
     size = int(np.ceil(sigma * 6))
-    yy, xx = np.mgrid[cy - size : cy + size + 1, cx - size : cx + size + 1]
-    image[cy - size : cy + size + 1, cx - size : cx + size + 1] += amplitude * np.exp(
+    height, width = image.shape
+    y0, y1 = max(cy - size, 0), min(cy + size + 1, height)
+    x0, x1 = max(cx - size, 0), min(cx + size + 1, width)
+    yy, xx = np.mgrid[y0:y1, x0:x1]
+    image[y0:y1, x0:x1] += amplitude * np.exp(
         -0.5 * (((xx - cx) / sigma) ** 2 + ((yy - cy) / sigma) ** 2)
     )
     return image
@@ -1838,6 +1844,13 @@ def test_rejects_single_hot_pixel():
 def test_empty_field_returns_no_stars():
     assert detect_stars(_field(seed=5)) == []
 ```
+
+**Sul ritaglio di `_place_gaussian`.** La gaussiana resta centrata in `(cx, cy)` anche
+quando il ritaglio viene tagliato: della stella al bordo si disegna solo la parte che sta
+dentro l'immagine, che e' esattamente cio' che `test_rejects_stars_touching_the_border`
+vuole vedere rifiutare. Senza il taglio agli estremi quel test non arriverebbe nemmeno a
+chiamare `detect_stars`: morirebbe dentro la fixture, e sembrerebbe un difetto della
+detection quando invece e' un difetto dell'impalcatura del test.
 
 - [ ] **Step 2: Eseguire il test e verificare che fallisca**
 
