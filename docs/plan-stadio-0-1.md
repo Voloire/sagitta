@@ -569,7 +569,9 @@ git commit -m "feat: scaffolding progetto Sagitta e schema canonico dei frame"
 **Files:**
 - Create: `src/sagitta/dialects/generic.yaml`
 - Create: `src/sagitta/dialects/nina.yaml`
+- Create: `src/sagitta/dialects/sgp.yaml`
 - Create: `src/sagitta/dialects/asiair.yaml`
+- Create: `src/sagitta/dialects/ekos.yaml`
 - Create: `src/sagitta/ingest/dialects.py`
 - Test: `tests/ingest/test_dialects.py`
 
@@ -720,9 +722,38 @@ date_obs_is_utc: true
 date_obs_at_midpoint: false
 ```
 
-Creare anche `sgp.yaml` ed `ekos.yaml` copiando la struttura di `nina.yaml`, con
-`software_contains: ["Sequence Generator"]` e `["Ekos", "KStars"]` rispettivamente, e senza
-sovrascritture in `map`.
+Creare `src/sagitta/dialects/sgp.yaml`:
+
+```yaml
+name: sgp
+match:
+  software_contains: ["Sequence Generator"]
+inherits: generic
+date_obs_is_utc: true
+date_obs_at_midpoint: false
+```
+
+Creare `src/sagitta/dialects/ekos.yaml`:
+
+```yaml
+name: ekos
+match:
+  software_contains: ["Ekos", "KStars"]
+inherits: generic
+date_obs_is_utc: true
+date_obs_at_midpoint: false
+```
+
+Nessuno dei due dichiara `map`: ereditano quella di `generic` senza sovrascriverla, ed e'
+il motivo per cui non hanno un blocco `map` come `nina` e `asiair`. `load_dialects()` legge
+la cartella con `glob("*.yaml")`, quindi comparire nella cartella basta a esistere: non c'e'
+nessun elenco di nomi da aggiornare altrove.
+
+**Perche' ci sono, se nessun test li nomina.** I test di questo task verificano `generic`,
+`nina` e `asiair`. `sgp` ed `ekos` sono dati, non codice: la loro correttezza si vede su un
+header vero, che qui non abbiamo. Stanno nel piano perche' la sezione **File Structure** li
+elenca e perche' il progetto dichiara di coprire quei quattro software - non perche' un
+test li pretenda.
 
 Creare `src/sagitta/ingest/dialects.py`:
 
