@@ -892,7 +892,7 @@ git commit -m "feat: dialetti di header FITS come mappe YAML versionate"
 - Consumes: `FrameMeta` (Task 1), `detect_dialect` e `apply_dialect` (Task 2).
 - Produces: `read_frame(path: Path) -> tuple[FrameMeta, numpy.ndarray]`. L'array è sempre `float64` 2D.
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/conftest.py`:
 
@@ -1020,12 +1020,12 @@ def test_bayer_pattern_is_read(write_fits):
     assert meta.bayer_pattern == "RGGB"
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/ingest/test_fits_reader.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.ingest.fits_reader'`
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Creare `src/sagitta/ingest/fits_reader.py`:
 
@@ -1127,12 +1127,12 @@ def read_frame(path: Path) -> tuple[FrameMeta, np.ndarray]:
     return meta, pixels
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/ingest/ -v`
 Expected: PASS, tutti i test di ingest
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
