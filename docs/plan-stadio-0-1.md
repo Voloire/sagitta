@@ -87,7 +87,11 @@ Se dovessi trovarlo mancante o corrotto, si ricrea dalla radice del repository c
 
 Run: `python -m venv .venv`
 
-Attiva l'ambiente a ogni nuova sessione di shell:
+**L'attivazione dell'ambiente è compito tuo, e di nessun altro.** Nessuno te lo prepara e
+nessuno te lo ricorda: se apri una shell e trovi l'ambiente spento, lo accendi tu. Vale a
+ogni nuova sessione di shell e all'inizio di ogni task, anche quando sei ragionevolmente
+sicuro che sia già attivo — il controllo costa un comando, sbagliarlo costa un'installazione
+finita nel Python di sistema.
 
 Run: `.\.venv\Scripts\Activate.ps1`
 
@@ -115,9 +119,24 @@ codice. Prima del Task 14 leggi la sezione **La configurazione GitHub, decisa: a
 repository pubblico**, in fondo a questo documento: fissa cosa la piattaforma ci dà gratis e
 cosa non va reintrodotto.
 
-### Il ciclo di ogni passo
+### Il ciclo di ogni task, e di ogni passo
 
-Ogni task è una sequenza di passi con casella di spunta. Per ciascuno:
+**Prima riga di ogni task, sempre, prima del suo Step 1.** Sono due comandi e li esegui tu:
+
+Run: `git rev-parse --abbrev-ref HEAD`
+
+Expected: `dev`.
+
+Run: `python -c "import sys; print(sys.prefix)"`
+
+Expected: un percorso che termina con `.venv`. Se non lo è, attiva l'ambiente con
+`.\.venv\Scripts\Activate.ps1` e ricontrolla prima di proseguire.
+
+Non sono formalità: sono le due condizioni che, se sbagliate, fanno finire il lavoro nel ramo
+sbagliato o l'installazione nel Python di sistema, e in entrambi i casi te ne accorgi molto
+dopo. Nessuno le verifica al posto tuo.
+
+Poi, ogni task è una sequenza di passi con casella di spunta. Per ciascuno:
 
 1. Leggi il passo per intero prima di agire.
 2. Fai **esattamente** ciò che dice. Il codice nei blocchi va copiato com'è, non riscritto
