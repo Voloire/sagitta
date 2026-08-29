@@ -3246,15 +3246,36 @@ def test_cli_without_arguments_exits_nonzero_and_explains():
     assert "measure" in (result.stderr + result.stdout)
 ```
 
+In `pyproject.toml`, aggiungere alla sezione `[tool.pytest.ini_options]` la riga che rende
+obbligatoria la registrazione dei marker:
+
+```toml
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--strict-markers"]
+```
+
+Senza questa riga un marker non registrato produce soltanto un avviso: `pytest.mark.smok`
+scritto male non selezionerebbe nulla e non lo direbbe a nessuno. Con la riga, un marker
+sconosciuto ferma la raccolta.
+
 - [ ] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/test_smoke.py -v`
-Expected: FAIL. Almeno `test_cli_without_arguments_exits_nonzero_and_explains` e
-`test_cli_reports_unreadable_file_without_crashing` falliscono, perché `python -m sagitta.cli`
-non è ancora un punto di ingresso eseguibile e `argparse` non è configurato per uscire con
-codice diverso da zero in modo prevedibile.
+Expected: FAIL. La raccolta si interrompe prima di eseguire qualsiasi test, con uscita 2:
 
-- [ ] **Step 3: Rendere il modulo eseguibile e configurare i marker**
+```text
+ERROR collecting tests/test_smoke.py
+'smoke' not found in `markers` configuration option
+```
+
+Il rosso di questo task e' il marker non registrato, non la CLI. `sagitta measure` e il
+blocco `if __name__ == "__main__"` esistono gia' dal Task 12, quindi i quattro test
+passerebbero: non c'e' nessun fallimento di comportamento da produrre qui, e cercarlo
+sarebbe cercare un rosso che non esiste. Se a questo punto leggi `4 passed`, vuol dire che
+la riga `addopts` dello Step 1 non e' stata scritta.
+
+- [ ] **Step 3: Registrare i marker della suite**
 
 In `src/sagitta/cli.py` il blocco finale esiste già:
 
@@ -3271,6 +3292,7 @@ In `pyproject.toml`, sostituire la sezione `[tool.pytest.ini_options]` con:
 ```toml
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = ["--strict-markers"]
 markers = [
     "smoke: test end-to-end che lanciano l'eseguibile installato",
     "slow: test che superano i 10 secondi",
@@ -3280,10 +3302,10 @@ markers = [
 - [ ] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/test_smoke.py -v`
-Expected: PASS, 4 test
+Expected: PASS, 4 test, e nessun `PytestUnknownMarkWarning` fra gli avvisi
 
 Run: `python -m pytest -m smoke -v`
-Expected: PASS, gli stessi 4 test, nessun test unitario raccolto
+Expected: PASS, gli stessi 4 test, nessun test unitario raccolto: `4 passed, 73 deselected`
 
 Run: `python -m pytest -v`
 Expected: PASS, l'intera suite
