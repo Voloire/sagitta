@@ -1742,7 +1742,7 @@ git commit -m "feat: misura della forma stellare con momenti secondi"
   - `estimate_background(pixels: np.ndarray) -> tuple[float, float]` — restituisce `(mediana, sigma_robusta)`
   - `detect_stars(pixels: np.ndarray, settings: DetectionSettings | None = None) -> list[StarShape]`
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/measure/test_detect.py`:
 
@@ -1852,12 +1852,12 @@ vuole vedere rifiutare. Senza il taglio agli estremi quel test non arriverebbe n
 chiamare `detect_stars`: morirebbe dentro la fixture, e sembrerebbe un difetto della
 detection quando invece e' un difetto dell'impalcatura del test.
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/measure/test_detect.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.measure.detect'`
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Creare `src/sagitta/measure/detect.py`:
 
@@ -1979,12 +1979,12 @@ def detect_stars(pixels: np.ndarray, settings: DetectionSettings | None = None) 
     return stars
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/measure/test_detect.py -v`
 Expected: PASS, 7 test
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
