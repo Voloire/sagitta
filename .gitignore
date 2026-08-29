@@ -15,3 +15,6 @@ htmlcov/
 # Artefatti locali di lavoro
 demo.fits
 *.fits.tmp
+
+# Impostazioni locali della sessione, non condivise
+.claude/settings.local.json
