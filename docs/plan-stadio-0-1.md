@@ -376,7 +376,7 @@ finito**, e il difetto che ti porti dietro lo ritrovi a valle, dove costa di pi�
 - Consumes: niente.
 - Produces: `FrameMeta` dataclass con i campi elencati sotto, e `FrameMeta.is_usable_for_shape() -> bool`. Tutti i task successivi importano `from sagitta.ingest.schema import FrameMeta`.
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/ingest/test_schema.py`:
 
@@ -434,7 +434,7 @@ def test_only_raw_frames_are_usable_for_shape():
     assert calibrated.is_usable_for_shape() is False
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 L'ambiente virtuale è nuovo e non contiene ancora `pytest`. Il runner arriverebbe con
 `pip install -e ".[dev]"` allo Step 4, che però ha bisogno del `pyproject.toml` creato allo
@@ -448,7 +448,7 @@ Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta'`
 Se leggi invece `No module named pytest`, il comando qui sopra non è stato eseguito: il
 fallimento che serve è quello del package assente, non quello del runner assente.
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Creare `pyproject.toml`:
 
@@ -568,14 +568,14 @@ class FrameMeta:
         return self.frame_kind in ("raw", "unknown")
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `pip install -e ".[dev]"`
 
 Run: `python -m pytest tests/ingest/test_schema.py -v`
 Expected: PASS, 3 test
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
@@ -4157,7 +4157,7 @@ Run: `git push origin dev`
 creare il tag `v0.1.0`. Segnala che il Task 16 è chiuso e fermati: il push su `dev` è già
 il segnale, e il turno passa da solo.
 
-- [ ] **Step 9 (sessione Claude di revisione, non l'agente di sviluppo): promuovere e taggare**
+- [x] **Step 9 (sessione Claude di revisione, non l'agente di sviluppo): promuovere e taggare**
 
 Scritto qui perché il protocollo sia completo in un solo posto, non perché l'agente di
 sviluppo lo esegua.
