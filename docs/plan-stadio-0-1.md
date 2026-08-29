@@ -2221,7 +2221,7 @@ git commit -m "feat: stratificazione della misura per zone del campo"
   - `FrameMeasurement` dataclass: `meta: FrameMeta`, `sampling: SamplingVerdict`, `n_stars: int`, `zones: dict[str, ZoneStats]`, `stars: list[StarShape]`, `refusals: list[str]`
   - `measure_frame(path: Path, settings: DetectionSettings | None = None) -> FrameMeasurement`
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Creare `tests/measure/test_frame.py`:
 
@@ -2322,12 +2322,12 @@ def test_missing_focal_length_refuses_but_still_reports_metadata(write_fits):
     assert any("focale" in r.lower() for r in result.refusals)
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `python -m pytest tests/measure/test_frame.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta.measure.frame'`
 
-- [ ] **Step 3: Scrivere l'implementazione minima**
+- [x] **Step 3: Scrivere l'implementazione minima**
 
 Creare `src/sagitta/measure/frame.py`:
 
@@ -2409,7 +2409,7 @@ def measure_frame(path: Path, settings: DetectionSettings | None = None) -> Fram
     return FrameMeasurement(meta, sampling, len(stars), zones, stars, refusals)
 ```
 
-- [ ] **Step 4: Eseguire i test e verificare che passino**
+- [x] **Step 4: Eseguire i test e verificare che passino**
 
 Run: `python -m pytest tests/measure/ -v`
 Expected: PASS, tutti i test di measure
@@ -2418,7 +2418,7 @@ Nota: se `test_measures_stars_and_zones` fallisce sull'assenza di rifiuti, la gr
 stelle del test potrebbe non popolare a sufficienza qualche zona d'angolo. In quel caso
 ridurre ulteriormente il passo della griglia nel test, non allentare `min_stars`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
