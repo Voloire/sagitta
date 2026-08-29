@@ -410,8 +410,17 @@ def test_only_raw_frames_are_usable_for_shape():
 
 - [ ] **Step 2: Eseguire il test e verificare che fallisca**
 
+L'ambiente virtuale è nuovo e non contiene ancora `pytest`. Il runner arriverebbe con
+`pip install -e ".[dev]"` allo Step 4, che però ha bisogno del `pyproject.toml` creato allo
+Step 3: prima del rosso va quindi installato il solo runner, e nient'altro.
+
+Run: `pip install pytest`
+
 Run: `python -m pytest tests/ingest/test_schema.py -v`
 Expected: FAIL con `ModuleNotFoundError: No module named 'sagitta'`
+
+Se leggi invece `No module named pytest`, il comando qui sopra non è stato eseguito: il
+fallimento che serve è quello del package assente, non quello del runner assente.
 
 - [ ] **Step 3: Scrivere l'implementazione minima**
 
