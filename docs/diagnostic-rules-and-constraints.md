@@ -60,6 +60,28 @@ to whoever handed it over.
 **Practical test:** an astrophotographer with a spreadsheet and the same logs must be able
 to reproduce the threshold and disagree with it.
 
+### C6. Every recommendation ships with a falsification criterion, stated first.
+
+Added 2026-08-30, after a recommendation made during this investigation was refuted by the
+next night's data. The tool had advised raising the guide exposure from 1000 to 2000 ms, on
+the reasoning that a longer exposure raises guide-star SNR and averages over seeing. SNR
+rose as predicted. Guiding got 20–40% *worse*, and the premise had already been contradicted
+by a finding on file: that axis was at the centroiding floor, so there was no measurement
+noise left to average, while halving the correction rate cost real tracking.
+
+Nothing in the reasoning was absurd, which is the point. A mechanism that sounds right is
+not evidence, and the failure mode is not stupidity — it is that the contradicting
+measurement was already written down and went unread.
+
+So: when the tool advises a change, it states **what result would prove the advice wrong**,
+before the change is made. One variable at a time, and a number that decides it. Advice
+without a falsification criterion is not a diagnosis; it is a suggestion wearing one's
+clothes, and it cannot be audited after the fact because there is nothing to audit against.
+
+The operator, in this instance, had reached the right value empirically over several nights.
+That is worth recording too: the tool's job is to explain and to generalize what careful
+practice already finds, not to assume it knows better.
+
 ---
 
 ## Part 2 — Why these constraints exist
@@ -121,14 +143,23 @@ firing is worse than a silent one.
 ### R3 — The sky closed, not the rig
 
 - **Inputs:** guide-log sample timestamps only. No image data needed.
-- **Condition:** samples per minute below 50% of the session median.
+- **Condition:** samples per minute below 50% of the session median, **counting only
+  complete windows.** The last window before a session ends is partial by construction and
+  must be discarded before the comparison.
 - **Verdict:** frames were dropped. Subs in that window are marked *sky*, not *equipment*,
   and are excluded from equipment conclusions.
 - **Evidence:** both catastrophes in twenty nights were this and nothing else — clouds on
   2026-08-05 at 23:43, dawn on 2026-08-13 at 04:01. Healthy sessions yield ~510 Mount rows
   per 10 minutes at 1 s exposure; both failures fell below 100 while reported distances
   exploded.
-- **Status:** ready. Pure counting, and the most reliable signal in the entire archive.
+- **Defect found and fixed, 2026-08-30.** As first written the rule fired on the trailing
+  partial window of *every* session: 47 samples against a median of 275, on a session that
+  had simply ended at 02:04. A rule that announces a catastrophe at every session boundary
+  is worse than no rule, because the one real cloud is lost among the false ones. The fix is
+  one clause, and the lesson is that a threshold on a ratio needs a statement about which
+  samples are eligible to enter it.
+- **Status:** ready, with the completeness clause. Pure counting, and still the most
+  reliable signal in the archive.
 
 ### R4 — Guide rate misconfigured
 
@@ -142,17 +173,51 @@ firing is worse than a silent one.
   defeated only by an unbroken human ritual.
 - **Status:** ready. One regular expression.
 
-### R5 — Polar drift
+### R5 — Systematic Dec bias  *(renamed; the polar verdict is retired)*
 
 - **Inputs:** guide-log Dec raw distance.
 - **Condition:** split the session into 10-minute windows, take the mean Dec error per
-  window, count sign agreement. High agreement plus growing magnitude indicates
-  systematic drift rather than seeing.
-- **Verdict:** *polar alignment* as a candidate; a mid-session sign flip **excludes** it
-  and points at flexure or a target change instead.
-- **Evidence:** 2026-07-29, 41 of 41 windows positive, +0.76 → +1.26 arcsec. Contrast
-  2026-08-06 and 2026-08-13, both of which flip sign mid-session.
-- **Status:** mechanism proven, agreement threshold not calibrated.
+  window, count sign agreement. High agreement plus growing magnitude indicates systematic
+  drift rather than seeing.
+- **Verdict:** *systematic Dec bias, cause not determined.* **The rule may not name polar
+  alignment.** A mid-session sign flip still excludes polar, so the rule can rule that cause
+  *out*; it cannot rule it *in*.
+- **Why the verdict was cut back, 2026-08-30.** The rule originally reached "polar
+  alignment" from within-night sign agreement, on the strength of 2026-07-29: 41 of 41
+  windows positive, +0.76 → +1.26 arcsec. Three findings retired it.
+  1. No polar-alignment change was made between 2026-08-29 and 2026-08-30, yet the same
+     geometry produced drift of the same magnitude with **opposite sign** on those two
+     nights — same declination, altitude and pier side.
+  2. The Dec drift is **reproducible between consecutive nights** on identical geometry, so
+     it is a function of pointing, not of a misaligned axis that would bias one direction.
+  3. The Dec correction demand decays about fourfold as the target climbs from 20° to 45°,
+     matching the fourfold fall in the refraction gradient `dR/dh` over the same range.
+     Atmospheric refraction predicts the observed behaviour without invoking a fault.
+- **What would let a successor rule name a cause:** the deterministic geometric baseline —
+  refraction plus parallactic angle from time, site latitude and target coordinates — and a
+  measured *deviation* from it. Sign agreement on one night is not evidence about a cause;
+  it is evidence that something is systematic, which is all the rule may now say.
+- **Status:** verdict narrowed to what the data supports. Agreement threshold still not
+  calibrated. Must stay silent on cause.
+
+### R8 — Per-axis headroom  *(candidate, new 2026-08-30)*
+
+- **Inputs:** guide-log raw distance, per axis. No image data.
+- **Condition:** lag-1 autocorrelation of the per-axis error series, plus mean run length on
+  one side of the mean. White noise gives 0 and 2 respectively.
+- **Verdict:** an axis indistinguishable from white noise is **seeing- and
+  centroiding-limited: tuning it cannot pay, and attempting to will make it worse.** A
+  clearly autocorrelated axis has recoverable error, because the present error predicts the
+  next one.
+- **Evidence:** seven sessions over two nights. RA 0.05–0.26 with runs of 2.2–3.5; Dec
+  0.41–0.76 with runs of 3.8–5.7. Two competing explanations for the Dec figure were tested
+  and both failed — the deadband (85–88% of samples sit below it, with an RMS of 0.6, so the
+  total is set by the tail) and slow drift (a real but minority term, 30–40% of variance).
+- **Why it earns a place:** it is the only rule here that tells a user where *not* to spend
+  their evening. Every other rule points at a fault; this one certifies that an axis is
+  finished.
+- **Status:** mechanism clear, thresholds not calibrated. One rig, two nights, one guide
+  scale. The test may ship; a number may not.
 
 ### R6 — Field geometry
 
@@ -180,16 +245,24 @@ firing is worse than a silent one.
 
 | Rule | Mechanism | Threshold | May ship |
 |---|---|---|---|
-| R3 sky closed | proven | fixed (50% of median) | **yes** |
+| R3 sky closed | proven | fixed (50% of median, complete windows only) | **yes** |
 | R4 guide rate | proven | fixed (0.5× sidereal) | **yes** |
 | R7 saturation | proven | fixed (~0.75) | yes, after `axis_ratio` |
 | R1 guiding excluded | proven | not calibrated | no |
-| R5 polar drift | proven | not calibrated | no |
+| R5 systematic Dec bias | proven | not calibrated | no, and never names a cause |
 | R6 field geometry | by construction | not calibrated | no |
 | R2 damage ratio | proven | `k` unknown | no |
+| R8 per-axis headroom | clear, one rig | not calibrated | test yes, number no |
 
-Three rules are ready today. Four need calibration data before they are allowed to speak.
+Three rules are ready today. Five need calibration data before they are allowed to speak.
 **Shipping an uncalibrated rule is the failure mode this table exists to prevent.**
+
+**One reporting requirement that is not a rule.** Guiding RMS must always be printed with
+the airmass it was measured at. Seeing scales roughly as airmass^0.6, so at the reference
+rig's working altitudes — 20° to 45°, a balcony constraint, not a choice — a measured 1.0
+arcsec is about 0.5 arcsec at zenith. Bare arcsec invites precisely the wrong comparison
+between two rigs, which is the confounder this whole project exists to defeat. Printing it
+without airmass would reintroduce the disease inside the cure.
 
 ---
 

@@ -247,6 +247,146 @@ threshold, look first for a night that broke slowly. Do not discard failed sessi
 
 ---
 
+## 9. The exposure pair — a controlled experiment, and a recommendation that was wrong
+
+Two consecutive nights, 2026-08-29/30 and 2026-08-30/31. Same three targets in the same
+order, same pier side, altitudes within 3°, moon near full on both. One variable changed:
+guide exposure, 2000 ms → 1000 ms.
+
+| Target | Altitude | 2000 ms | 1000 ms | Change |
+|---|---|---|---|---|
+| RA 2.95 h, Dec +60.5 | 24° / 26° | 1.55 | **1.10** | −29% |
+| RA 4.07 h, Dec +36.4 | 20° / 20° | 1.30 | **1.15** | −12% |
+| RA 5.41 h, Dec +33.3 | 20° / 20° | 1.42 | **1.12** | −21% |
+| RA 5.41 h, Dec +33.3 | 53° / 50° | 1.92 | **1.14** | −41% |
+
+Total RMS in arcsec, whole session. Sample rate went from 27 to 51 rows per minute —
+exactly double — while the fraction of frames needing a correction *fell*, from 45% to 31%
+in RA and 20% to 13% in Dec. Correct twice as often and there is less to correct each
+time.
+
+**The more interesting result is the dispersion, not the mean.** At 2000 ms the sessions
+spanned 1.30–1.92; at 1000 ms they span 1.10–1.15 — five hundredths of an arcsecond across
+eight hours and three targets. The worst 10-minute window improved from 2.55 to 1.96.
+Guiding did not merely get better; it became predictable, which is the property a test
+bench actually needs.
+
+**The 2000 ms setting came from a recommendation made during this investigation, and it was
+wrong.** The reasoning was that a longer exposure raises guide-star SNR and averages over
+seeing. SNR did rise, 92 → 145. RMS got worse by 20–40%. The premise was already
+contradicted by a finding recorded in this same document: RA was sitting at the centroiding
+floor, so there was no measurement noise left for a longer exposure to average away — while
+halving the correction rate cost real tracking. The operator had arrived at 1000 ms
+empirically, over several nights, and was right.
+
+**The methodological consequence is the reason this section exists.** A recommendation
+derived from a plausible mechanism is not evidence, and this document has to keep the two
+apart. Constraint C5 already requires every threshold to ship with its derivation. Add to
+it: **every recommendation ships with a falsification criterion, stated before the test
+rather than reconstructed after it.** Without that rule, a mechanism that sounds right gets
+adopted while the contradicting measurement already on file goes unread.
+
+---
+
+## 10. Telling a seeing-limited axis from one that still has headroom
+
+A cheap per-axis verdict, from the guide log alone, on whether tuning that axis can pay at
+all.
+
+**The test:** lag-1 autocorrelation of the raw per-axis error, plus the mean length of runs
+on one side of the mean. White noise gives autocorrelation 0 and run length 2.
+
+| Axis | Lag-1 autocorrelation | Mean run length |
+|---|---|---|
+| RA | 0.05 – 0.26 | 2.2 – 3.5 |
+| Dec | **0.41 – 0.76** | 3.8 – 5.7 |
+
+Seven sessions across the two nights. **RA is almost memoryless: it is seeing and
+centroiding, and no amount of tuning will recover it.** Dec stays on one side for four to
+six consecutive frames, and correlated error is recoverable by definition — the current
+error predicts the next one. Uncorrelated error is not, and chasing it makes things worse.
+
+Two hypotheses were tested first and both failed, which is worth recording because each
+looked convincing:
+
+- **"Dec is limited by its deadband."** Dec minimum move is 0.176 px = 1.135 arcsec on this
+  guide scale, and measured Dec RMS was 1.15–1.19. The near-equality looked causal. It was
+  not: 85–88% of samples sit *below* the deadband with an RMS of only 0.6. The total is set
+  by the tail, not the floor, and lowering the deadband would not touch the tail.
+- **"Dec is slow drift."** Detrending on a 2-minute window removes 30–40% of Dec variance
+  but only 5–25% of RA variance. Real, but a minority term.
+
+The autocorrelation test is what separated the axes, and it is the part worth building: one
+pass over a guide log, no image data, and no threshold beyond "is this distinguishable from
+white noise". Candidate rule **R8**.
+
+**Calibration status:** mechanism clear, thresholds not calibrated. One rig, two nights, one
+guide scale. Must not ship a number.
+
+---
+
+## 11. Guiding demand is predictable from geometry — and the site sets the floor
+
+The reference rig observes from a balcony with obstructions. Sessions start just above **20°
+altitude** and end near **45°**. Conventional advice is not to start below 45°; on this site
+that is not an option. Sky background is Bortle 3–4.
+
+That altitude window is precisely where atmospheric refraction changes fastest.
+
+| Altitude | Refraction | dR/dh |
+|---|---|---|
+| 20° | 162″ | −8.6 ″/deg |
+| 25° | 127″ | −5.7 ″/deg |
+| 35° | 85″ | −3.1 ″/deg |
+| 45° | 60″ | −2.1 ″/deg |
+| 60° | 35″ | −1.4 ″/deg |
+
+Bennett's formula. **Measured against it:** the Dec correction fraction decays about
+fourfold within a session as the target rises — 22% → 5%, 21% → 2%, 16% → 3% — matching the
+fourfold fall in `dR/dh` between 20° and 45°.
+
+Two of the sessions approach the meridian, and in both the correction fraction turns and
+rises again in the second half. That is consistent with a second term: refraction displaces
+the image along **altitude**, and its Dec component scales as `cos(parallactic angle)`,
+which approaches 1 at the meridian. The amplitude falls while the projection into Dec
+grows. Sessions that never reach the meridian show only the falling branch.
+
+Four consequences, in descending order of confidence.
+
+**(a) Absolute RMS in arcsec is not a rig-quality number unless airmass is stated.** Seeing
+scales roughly as airmass^0.6. At airmass 2.3–2.9 a measured 1.0 arcsec corresponds to
+about 0.5–0.55 arcsec at zenith. A report that prints bare arcsec invites exactly the wrong
+comparison between two rigs — which is the confounding problem this project exists to
+solve, reappearing inside its own output. **Report guiding RMS with the airmass it was
+measured at, always.**
+
+**(b) R5 must be retired as specified.** It concluded *polar alignment* from sign agreement
+within a single night. On this rig the Dec drift is reproducible between consecutive nights
+on identical geometry, flips sign mid-session, and tracks a refraction prediction. Polar
+alignment is excluded, and no polar-alignment change was made between the nights. The
+strongest verdict a rule may reach from one night is **"systematic Dec bias, cause not
+determined."** Naming a cause requires the geometric baseline below, and a *deviation* from
+it.
+
+**(c) That baseline is deterministic.** Refraction and parallactic angle follow from time,
+site latitude and target coordinates — closed-form arithmetic, no model, no network, no
+fitting. It fits constraint C1 exactly, and it converts an unfalsifiable verdict into a
+residual: predicted demand against observed demand. What is left after subtracting geometry
+is the part that can be a fault.
+
+**(d) The dark site is why the exposure experiment reads cleanly.** With low sky background
+the guide star is star-limited rather than sky-limited, so changing exposure trades photons
+against correction rate with no background term in between. The same experiment on a bright
+site would confound the two, and section 9's numbers would not transfer.
+
+**Calibration status:** the fourfold match is two numbers agreeing on one rig over two
+nights. Suggestive and self-consistent, **not fitted**. Before this becomes a rule the
+prediction has to be computed properly and compared against several rigs at different
+latitudes and altitude windows. Consequence (a) is geometry and can ship now; (b) is a
+retirement and should happen now; (c) and (d) are directions, not results.
+
+---
+
 ## Ranked proposal for 0.2.0
 
 | # | Change | Depends on | Evidence strength |
@@ -256,9 +396,20 @@ threshold, look first for a night that broke slowly. Do not discard failed sessi
 | 3 | Guide-rate header guard | — | strong, mechanism understood |
 | 4 | PHD2 join, per the three specs in section 5 | — | requirements verified by hand |
 | 5 | `n_stars` promoted, with per-configuration baseline | — | strong |
-| 6 | Damage in units of FWHM rather than arcsec | 1 | curve indicative only, needs more nights |
-| 7 | Per-metric sampling guardrail for OSC | experiment | hypothesis only, must be measured |
+| 6 | Report guiding RMS with airmass, never bare arcsec | 4 | geometry, not a measurement |
+| 7 | Retire R5's polar verdict; ceiling is "cause not determined" | — | strong, two nights, cause excluded |
+| 8 | Damage in units of FWHM rather than arcsec | 1 | curve indicative only, needs more nights |
+| 9 | Per-axis headroom verdict via autocorrelation (R8) | 4 | mechanism clear, one rig two nights |
+| 10 | Refraction/parallactic baseline for Dec demand | 6, 9 | suggestive, needs several latitudes |
+| 11 | Per-metric sampling guardrail for OSC | experiment | hypothesis only, must be measured |
 
-Items 1–5 rest on evidence gathered here. Item 6 needs more nights before any number it
-produces can be published. Item 7 is a hypothesis with a designed experiment attached and
-no result yet — it must not be implemented on the strength of this document alone.
+Items 1–5 rest on evidence gathered here. Items 6 and 7 are consequences of geometry and of
+a cause being excluded, not of a new threshold, and cost nothing to adopt. Item 8 needs more
+nights before any number it produces can be published. Item 9 may ship the *test* but not a
+threshold. Items 10 and 11 are hypotheses with designed experiments attached and no result
+yet — neither may be implemented on the strength of this document alone.
+
+**A note on what this document is for.** Section 9 records a recommendation made here that
+the next night's data refuted. That entry is the most useful one in the file: a findings
+document that only accumulates confirmations is a sales brochure. Keep the refutations, and
+keep them in the same voice as the successes.
