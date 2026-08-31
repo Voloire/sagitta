@@ -10,6 +10,8 @@ import datetime as dt
 from dataclasses import dataclass, field
 from typing import Literal
 
+from sagitta.sky import airmass_from_altitude
+
 FrameKind = Literal["raw", "calibrated", "registered", "unknown"]
 
 
@@ -40,6 +42,7 @@ class FrameMeta:
     site_longitude_deg: float | None = None
     pointing_ra_deg: float | None = None
     pointing_dec_deg: float | None = None
+    altitude_deg: float | None = None
     rotation_deg: float | None = None
     telescope: str | None = None
     instrument: str | None = None
@@ -59,6 +62,22 @@ class FrameMeta:
             raise ValueError("exposure_s deve essere positiva")
         if self.width <= 0 or self.height <= 0:
             raise ValueError("width e height devono essere positive")
+
+    def airmass(self) -> float | None:
+        """Relative air mass at the pointing, or None when it cannot be known.
+
+        Derived, never stored: a stored copy could drift out of agreement with
+        `altitude_deg`. The header's own AIRMASS is deliberately discarded --
+        see `sagitta.sky.airmass_from_altitude` for why.
+
+        `altitude_deg` comes from the altitude the acquisition software
+        recorded, which is the pointing the mount reported rather than an
+        astrometric solution. In N.I.N.A. that altitude is referred to the
+        middle of the exposure, not to DATE-OBS.
+        """
+        if self.altitude_deg is None:
+            return None
+        return airmass_from_altitude(self.altitude_deg)
 
     def is_usable_for_shape(self) -> bool:
         """Solo le sub grezze entrano nelle metriche di forma.

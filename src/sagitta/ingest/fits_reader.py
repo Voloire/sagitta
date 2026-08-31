@@ -84,6 +84,7 @@ def read_frame(path: Path) -> tuple[FrameMeta, np.ndarray]:
         site_longitude_deg=_opt_float("site_longitude_deg"),
         pointing_ra_deg=_opt_float("pointing_ra_deg"),
         pointing_dec_deg=_opt_float("pointing_dec_deg"),
+        altitude_deg=_opt_float("altitude_deg"),
         rotation_deg=_opt_float("rotation_deg"),
         telescope=_opt_str("telescope"),
         instrument=_opt_str("instrument"),

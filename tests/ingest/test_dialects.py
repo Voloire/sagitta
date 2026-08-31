@@ -60,3 +60,22 @@ def test_header_measured_values_are_never_mapped():
     assert "fwhm" not in canonical
     assert "HFR" not in unknown
     assert "FWHM" not in unknown
+
+
+def test_altitude_is_mapped_from_centalt():
+    header = {"EXPTIME": 300.0, "CENTALT": 24.3139376496665}
+    canonical, unknown = apply_dialect(header, "generic")
+    assert canonical["altitude_deg"] == 24.3139376496665
+    assert "CENTALT" not in unknown
+
+
+def test_header_airmass_is_never_mapped():
+    """AIRMASS is redundant with the altitude and hides its own formula.
+
+    Discarded for the same reason as HFR: a number another program computed
+    with an undeclared method must not enter the canonical metadata.
+    """
+    header = {"EXPTIME": 300.0, "CENTALT": 40.0, "AIRMASS": 1.55}
+    canonical, unknown = apply_dialect(header, "generic")
+    assert "airmass" not in canonical
+    assert "AIRMASS" not in unknown

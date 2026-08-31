@@ -94,3 +94,36 @@ def test_bayer_pattern_is_read(write_fits):
     )
     meta, _ = read_frame(path)
     assert meta.bayer_pattern == "RGGB"
+
+
+def test_altitude_is_read_and_airmass_recomputed(write_fits):
+    path = write_fits(
+        "soul.fits",
+        np.zeros((10, 10), dtype=np.float32),
+        {
+            "DATE-OBS": "2026-08-29T19:36:31.030",
+            "EXPTIME": 300.0,
+            "CENTALT": 24.3139376496665,
+            "AIRMASS": 2.41721897315115,
+            "SWCREATE": "N.I.N.A. 3.2.0.9001 (x64)",
+        },
+    )
+    meta, _ = read_frame(path)
+
+    assert meta.altitude_deg == pytest.approx(24.3139376496665)
+    airmass = meta.airmass()
+    assert airmass is not None
+    # Recomputed, not copied: agrees with the header value it replaced.
+    assert airmass == pytest.approx(2.41721897315115, rel=1e-3)
+    assert "AIRMASS" not in meta.unknown_keywords
+
+
+def test_a_frame_without_an_altitude_keyword_reports_no_airmass(write_fits):
+    path = write_fits(
+        "no-alt.fits",
+        np.zeros((10, 10), dtype=np.float32),
+        {"DATE-OBS": "2026-08-29T21:30:00", "EXPTIME": 60.0},
+    )
+    meta, _ = read_frame(path)
+    assert meta.altitude_deg is None
+    assert meta.airmass() is None

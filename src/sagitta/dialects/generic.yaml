@@ -18,6 +18,10 @@ map:
   site_longitude_deg: [SITELONG, LONG-OBS]
   pointing_ra_deg: [CRVAL1]
   pointing_dec_deg: [CRVAL2]
+  # Altitude of the field centre. ALTITUDE is deliberately not listed: some
+  # software uses it for the site elevation above sea level, and the two are
+  # indistinguishable once the value is in a canonical field.
+  altitude_deg: [CENTALT, OBJCTALT]
   rotation_deg: [ROTATANG, ROTATOR]
   telescope: [TELESCOP]
   instrument: [INSTRUME]
@@ -26,6 +30,9 @@ map:
 date_obs_is_utc: true
 date_obs_at_midpoint: false
 ignore:
+  # Values another program computed with an undeclared method. Recomputed
+  # internally instead: see sagitta.sky and sagitta.measure.
+  - AIRMASS
   - HFR
   - FWHM
   - ECCENTRICITY

@@ -49,3 +49,24 @@ def test_only_raw_frames_are_usable_for_shape():
     calibrated = _minimal()
     calibrated.frame_kind = "calibrated"
     assert calibrated.is_usable_for_shape() is False
+
+
+def test_altitude_is_absent_by_default_and_airmass_says_so():
+    """No altitude keyword in the header means no airmass, not a guessed one."""
+    meta = _minimal()
+    assert meta.altitude_deg is None
+    assert meta.airmass() is None
+
+
+def test_airmass_is_derived_from_the_altitude():
+    from sagitta.sky import airmass_from_altitude
+
+    meta = _minimal()
+    meta.altitude_deg = 24.3139376496665
+    assert meta.airmass() == airmass_from_altitude(24.3139376496665)
+
+
+def test_airmass_is_unknown_for_an_altitude_below_the_horizon():
+    meta = _minimal()
+    meta.altitude_deg = -12.0
+    assert meta.airmass() is None

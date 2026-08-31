@@ -264,6 +264,13 @@ arcsec is about 0.5 arcsec at zenith. Bare arcsec invites precisely the wrong co
 between two rigs, which is the confounder this whole project exists to defeat. Printing it
 without airmass would reintroduce the disease inside the cure.
 
+The ingest now supplies it. `FrameMeta.altitude_deg` is read from the header's field-centre
+altitude (`CENTALT`, `OBJCTALT`), and `FrameMeta.airmass()` derives the value with one
+declared formula, Kasten & Young 1989. The header's own `AIRMASS` is discarded alongside HFR:
+it adds nothing beyond the altitude and hides which formula produced it. Frames with no
+altitude keyword report `None` for both — the reporting stage must be able to say "unknown"
+rather than print a bare arcsec figure as if the airmass were known.
+
 ---
 
 ## Part 5 — Distribution and the surrounding stack

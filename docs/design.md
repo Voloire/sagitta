@@ -248,8 +248,12 @@ Legge FITS e XISF. Normalizza gli header eterogenei in uno **schema canonico**.
 
 Campi canonici minimi: istante di inizio posa (UTC), durata, filtro, binning, guadagno,
 offset, temperatura sensore, temperatura ambiente se presente, dimensione pixel, focale,
-coordinate del sito, coordinate puntate, coordinate risolte se presenti, angolo di rotazione
-risolto, telescopio, camera, software di acquisizione.
+coordinate del sito, coordinate puntate, coordinate risolte se presenti, **altezza del centro
+campo**, angolo di rotazione risolto, telescopio, camera, software di acquisizione.
+
+L'**airmass non è un campo**: è derivata dall'altezza con una formula unica e dichiarata
+(Kasten-Young 1989, in `sagitta.sky`). Memorizzarla accanto all'altezza creerebbe due
+sorgenti di verità che possono divergere.
 
 Il problema vero è che ogni software scrive keyword diverse e con convenzioni diverse. La
 mappa dialetto → canonico vive in **`dialects/*.yaml` versionati nel repository**, non
@@ -263,6 +267,18 @@ Regole dure:
 - **Non ci si fida mai di HFR/FWHM scritti nell'header.** Sono incomparabili tra software
   perché dipendono da soglia di detection, campionamento e fondo. Si rimisura sempre con un
   motore unico.
+- **Non ci si fida mai di `AIRMASS` scritta nell'header**, per lo stesso motivo di HFR e con
+  un motivo in più: non aggiunge informazione oltre l'altezza da cui è derivata, ma porta
+  con sé una scelta di formula che il file non dichiara. In giro si trovano Gueymard 1993,
+  Kasten-Young e il piano-parallelo `sec z`, che a 24 gradi di altezza sbaglia dello 0.5% e
+  più in basso diverge. Si ricalcola, così il referto può nominare la formula usata.
+- **L'altezza viene dal puntamento riportato dalla montatura**, non da una soluzione
+  astrometrica: un modello di puntamento storto la sporca in silenzio. In NINA è riferita al
+  **centro posa**, non a `DATE-OBS`; chi la verifica sull'inizio posa trova 0.36 gradi di
+  disaccordo apparente che non esiste (misurato su 63 frame, 31 agosto 2026).
+- Senza keyword di altezza l'altezza resta **assente**, e con lei l'airmass. Non si stima
+  dalle coordinate e dall'ora: servirebbe il tempo siderale con la correzione al centro posa,
+  ed è un lavoro separato. Meglio "non lo so" di una stima travestita da misura.
 - `XPIXSZ` e `FOCALLEN` sono spesso assenti o riportano la focale nominale invece di quella
   reale con riduttore. Se il campionamento risultante è incoerente con la dimensione
   stellare misurata, si segnala e si chiede conferma.
